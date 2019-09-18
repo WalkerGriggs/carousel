@@ -7,14 +7,15 @@ import (
 )
 
 type Server struct {
-	URI      URI
+	URI   URI    `json:"uri"`
+	Users []User `json:"users"`
+
 	Listener net.Listener
 }
 
 type URI struct {
-	Address string
-	Port    int
-	Type    string
+	Address string `json:"address"`
+	Port    int    `json:"port"`
 }
 
 func (uri URI) Format() string {
@@ -40,32 +41,30 @@ func (s Server) acceptLoop() {
 			log.Fatal(err)
 		}
 
-		go accept(conn)
+		go s.accept(conn)
 	}
 }
 
-func accept(conn net.Conn) {
+func (s Server) accept(conn net.Conn) {
 	connection := NewConnection(conn)
 	router := NewRouter()
 
-	ident := connection.decodeIdent(router)
+	username := connection.decodeIdent(router)
+	fmt.Println(username)
 
-	network := Network{
-		Name: "Freenode",
-		URI: URI{
-			Address: "chat.freenode.net",
-			Port:    6667,
-			Type:    "tcp",
-		},
-		Ident: ident,
-	}
-
-	user := User{
-		Username: ident.Username,
-		Network:  network,
-		Router:   router,
-	}
+	user := *getUser(username, s.Users)
+	user.Router = router
 
 	go connection.ReadWrite(user.Router)
 	go user.ReadWrite()
+}
+
+func getUser(username string, users []User) *User {
+	for _, user := range users {
+		if username == user.Username {
+			return &user
+		}
+	}
+
+	return nil
 }

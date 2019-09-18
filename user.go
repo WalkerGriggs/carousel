@@ -7,9 +7,11 @@ import (
 )
 
 type User struct {
-	Username string
-	Network  Network
-	Router   Router
+	Username string  `json:"username"`
+	Password string  `json:"password"`
+	Network  Network `json:"network"`
+
+	Router Router
 }
 
 func (u User) ReadWrite() {

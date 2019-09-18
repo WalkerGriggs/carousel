@@ -23,23 +23,7 @@ func NewConnection(conn net.Conn) Connection {
 	}
 }
 
-// TODO: Fix assumption that PASS, NICK, USER arrive in order
-func (c Connection) decode(command string, router Router) *irc.Message {
-	for {
-		message, err := c.Decoder.Decode()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		router.Wide <- message
-
-		if message.Command == command {
-			return message
-		}
-	}
-}
-
-func (c Connection) decodeIdent(router Router) Identity {
+func (c Connection) decodeIdent(router Router) string {
 	messages := make(map[string]*irc.Message)
 	required_commands := []string{"USER", "NICK", "PASS"}
 
@@ -56,12 +40,8 @@ func (c Connection) decodeIdent(router Router) Identity {
 		}
 	}
 
-	return Identity{
-		Nickname: messages["NICK"].Params[0],
-		Username: messages["USER"].Params[0],
-		Realname: messages["USER"].Params[3],
-		Password: messages["PASS"].Params[0],
-	}
+	// TODO: Proper login logic
+	return messages["USER"].Params[0]
 }
 
 func (c Connection) ReadWrite(router Router) {

@@ -1,23 +1,22 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"gopkg.in/sorcix/irc.v2"
 )
 
 type Network struct {
-	Name  string
-	URI   URI
-	Ident Identity
+	Name  string   `json:"name"`
+	URI   URI      `json:"uri"`
+	Ident Identity `json:"ident"`
 }
 
 type Identity struct {
-	Username string
-	Nickname string
-	Realname string
-	Password string
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Realname string `json:"realname"`
+	Password string `json:"password"`
 }
 
 func (net Network) Identify(conn *irc.Conn) {
@@ -37,8 +36,6 @@ func (net Network) Identify(conn *irc.Conn) {
 		Command: irc.USER,
 		Params:  []string{net.Ident.Username, "0", "*", net.Ident.Realname},
 	})
-
-	fmt.Println(messages)
 
 	batchSend(messages, conn)
 }
