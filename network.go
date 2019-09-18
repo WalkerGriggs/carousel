@@ -6,12 +6,16 @@ import (
 	"gopkg.in/sorcix/irc.v2"
 )
 
+// Network represents an IRC network. Each network has a URI, and, because Users
+// own the Network object, each Network stores the User's Identity as well.
 type Network struct {
 	Name  string   `json:"name"`
 	URI   URI      `json:"uri"`
 	Ident Identity `json:"ident"`
 }
 
+// Identity represnts the necessary information to authenticate with a Network.
+// See RFC 2812 § 3.1
 type Identity struct {
 	Username string `json:"username"`
 	Nickname string `json:"nickname"`
@@ -19,6 +23,8 @@ type Identity struct {
 	Password string `json:"password"`
 }
 
+// Identify handles connection registration for each user.
+// Again, see RFC 2812 § 3.1
 func (net Network) Identify(conn *irc.Conn) {
 	var messages []*irc.Message
 

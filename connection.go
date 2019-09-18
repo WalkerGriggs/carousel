@@ -9,6 +9,9 @@ import (
 	"gopkg.in/sorcix/irc.v2"
 )
 
+// Connection represents the connection between the User and the Server. Each
+// connection maintains a network connection, accepted in the Server's main
+// event loop.
 type Connection struct {
 	Conn    net.Conn
 	Encoder *irc.Encoder
@@ -23,6 +26,16 @@ func NewConnection(conn net.Conn) Connection {
 	}
 }
 
+// decodeIdent receives identification commands from an RFC compliant IRC
+// client. It listens for the necessary connection registration commands which
+// the User uses to verify against their credentials. These messages are not
+// forwarded on to the Network, but consumed by decodeIdent. Connection
+// registration is handled by the server using the Identity specified in the
+// User's config.
+//
+// decodeIdent is blocking, and will not return unless all of the required
+// commands have been supplied or a timeout has been reached (to be
+// implemented).
 func (c Connection) decodeIdent(router Router) string {
 	messages := make(map[string]*irc.Message)
 	required_commands := []string{"USER", "NICK", "PASS"}
@@ -44,12 +57,19 @@ func (c Connection) decodeIdent(router Router) string {
 	return messages["USER"].Params[0]
 }
 
+// ReadWrite spawns individual, concurrent processes for the Connection's read
+// and write tasks. ReadWrite should only return when both blocking processes
+// return.
 func (c Connection) ReadWrite(router Router) {
 	go c.Read(router)
 	go c.Write(router)
 }
 
-// User <-> (Bouncer <- Client)
+// Read reads, santizies, and forwards all messages sent from the User to the
+// network. In its current state, this blocking process should only exit if the
+// reader throws an error.
+//
+// Network <-> (Bouncer <- Client)
 func (c Connection) Read(router Router) {
 	reader := bufio.NewReader(c.Conn)
 
@@ -67,7 +87,11 @@ func (c Connection) Read(router Router) {
 	}
 }
 
-// User <-> (Bouncer -> Client)
+// Write writes all messages passed from the IRC network to the User's TCP
+// connection. In its current state, this blocking process should only exit if
+// the writer throws an error.
+//
+// Network <-> (Bouncer -> Client)
 func (c Connection) Write(router Router) {
 	for {
 		msg := <-router.Local
@@ -77,6 +101,8 @@ func (c Connection) Write(router Router) {
 	}
 }
 
+// containsAll checks to see if the message map contains all of the required
+// commands.
 func containsAll(messages map[string]*irc.Message, required_commands []string) bool {
 	for _, command := range required_commands {
 		if _, ok := messages[command]; !ok {
