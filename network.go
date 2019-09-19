@@ -28,10 +28,12 @@ type Identity struct {
 func (net Network) Identify(conn *irc.Conn) {
 	var messages []*irc.Message
 
-	messages = append(messages, &irc.Message{
-		Command: irc.PASS,
-		Params:  []string{net.Ident.Password},
-	})
+	if net.Ident.Password != "" {
+		messages = append(messages, &irc.Message{
+			Command: irc.PASS,
+			Params:  []string{net.Ident.Password},
+		})
+	}
 
 	messages = append(messages, &irc.Message{
 		Command: irc.NICK,

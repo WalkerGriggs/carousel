@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 // Server is the configuration for all of Carousel. It maintains a list of all
@@ -40,7 +42,7 @@ func (s Server) Serve() {
 	defer l.Close()
 
 	for {
-		conn, err := s.Listener.Accept()
+		conn, err := l.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -55,17 +57,24 @@ func (s Server) Serve() {
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
 func (s Server) accept(conn net.Conn) {
-	connection := NewConnection(conn)
 	router := NewRouter()
+	router.LocalConn = NewConnection(conn)
 
-	username := connection.decodeIdent(router)
-	fmt.Println(username)
-
+	// Block until client sends PASS, NICK, and USER commands.
+	username := router.LocalConn.decodeIdent(router)
 	user := *getUser(username, s.Users)
 	user.Router = router
 
-	go connection.ReadWrite(user.Router)
-	go user.ReadWrite()
+	// Connect to Network using User configs
+	irc_conn, err := irc.Dial(user.Network.URI.Format())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	router.WideConn = irc_conn
+
+	user.Network.Identify(router.WideConn)
+	go router.Route()
 }
 
 // getUser searches the server's users and retrieves the user matching the given
