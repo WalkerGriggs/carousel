@@ -9,6 +9,8 @@ import (
 // Network represents an IRC network. Each network has a URI, and, because Users
 // own the Network object, each Network stores the User's Identity as well.
 type Network struct {
+	Connection *irc.Conn
+
 	Name  string   `json:"name"`
 	URI   URI      `json:"uri"`
 	Ident Identity `json:"ident"`
@@ -21,6 +23,23 @@ type Identity struct {
 	Nickname string `json:"nickname"`
 	Realname string `json:"realname"`
 	Password string `json:"password"`
+}
+
+func (n Network) Send(msg *irc.Message) error {
+	return n.Connection.Encode(msg)
+}
+
+func (n Network) Receive() (*irc.Message, error) {
+	return n.Connection.Decode()
+}
+
+// Pong responds to the network's Ping with a Pong command.
+// See RFC 2812 § 3.7.2
+func (n Network) Pong(msg *irc.Message) {
+	n.Send(&irc.Message{
+		Command: "PONG",
+		Params:  msg.Params,
+	})
 }
 
 // Identify handles connection registration for each user.

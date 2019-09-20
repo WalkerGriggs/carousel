@@ -1,22 +1,32 @@
 package main
 
 import (
-	"bufio"
 	"log"
-	"strings"
 
 	"gopkg.in/sorcix/irc.v2"
 )
+
+type Connection interface {
+	Send(msg *irc.Message) error
+	Receive() (*irc.Message, error)
+}
 
 // Router maintains the two channels over which messages are passed between the
 // User and Network. Named after WAN and LAN, the Local channel handles all
 // traffic between the User and Router, and the Wide channel handles all traffic
 // between the Router and Network
 type Router struct {
-	Client *Client
-	IRC    *irc.Conn
+	Client  *Client
+	Network *Network
 
 	ClientReplies []*irc.Message
+}
+
+func NewRouter(client *Client, network *Network) *Router {
+	return &Router{
+		Network: network,
+		Client:  client,
+	}
 }
 
 // Local reads, sanitizes, and forwards all messages sent from the User to the
@@ -25,24 +35,21 @@ type Router struct {
 //   - the encoder throws an error
 //   - the client disconnects
 func (r *Router) Local() error {
-	reader := bufio.NewReader(r.Client.Connection)
-
 	for {
-		msg, err := reader.ReadString('\n')
+		//msg, err := reader.ReadString('\n')
+		msg, err := r.Client.Receive()
 		if err != nil {
 			return err
 		}
 
-		msg = strings.TrimSpace(string(msg))
-
-		if parsed_msg := irc.ParseMessage(msg); parsed_msg != nil {
-			switch parsed_msg.Command {
+		if msg != nil {
+			switch msg.Command {
 			case "QUIT":
 				r.Client = nil
 				return nil
 
 			default:
-				if err := r.IRC.Encode(parsed_msg); err != nil {
+				if err := r.Network.Send(msg); err != nil {
 					return err
 				}
 			}
@@ -56,20 +63,21 @@ func (r *Router) Local() error {
 //   - the writer throws an error
 func (r *Router) Wide() error {
 	for {
-		msg, err := r.IRC.Decode()
+		//msg, err := r.IRC.Decode()
+		msg, err := r.Network.Receive()
 		if err != nil {
 			return nil
 		}
 
 		switch msg.Command {
 		case "PING":
-			Pong(r.IRC, msg)
+			r.Network.Pong(msg)
 
 		case "001", "002", "003", "004", "005":
 			r.ClientReplies = append(r.ClientReplies, msg)
 		}
 
-		if _, err := r.Client.Connection.Write([]byte(msg.String() + "\n")); err != nil {
+		if err := r.Client.Send(msg); err != nil {
 			return err
 		}
 	}
@@ -84,13 +92,4 @@ func (r Router) LocalReply() {
 			log.Fatal(err)
 		}
 	}
-}
-
-// Pong responds to the network's Ping with a Pong command.
-// See RFC 2812 § 3.7.2
-func Pong(conn *irc.Conn, msg *irc.Message) {
-	conn.Encode(&irc.Message{
-		Command: "PONG",
-		Params:  msg.Params,
-	})
 }

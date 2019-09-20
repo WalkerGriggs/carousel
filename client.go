@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"log"
 	"net"
 	"strings"
@@ -15,14 +16,32 @@ type Client struct {
 	Connection net.Conn
 	Encoder    *irc.Encoder
 	Decoder    *irc.Decoder
+	Reader     *bufio.Reader
 }
 
-func NewClient(conn net.Conn) Client {
-	return Client{
+func NewClient(conn net.Conn) *Client {
+	return &Client{
 		Connection: conn,
+		Reader:     bufio.NewReader(conn),
 		Encoder:    irc.NewEncoder(conn),
 		Decoder:    irc.NewDecoder(conn),
 	}
+}
+
+func (c Client) Send(msg *irc.Message) error {
+	_, err := c.Connection.Write([]byte(msg.String() + "\n"))
+	return err
+}
+
+func (c Client) Receive() (*irc.Message, error) {
+	msg, err := c.Reader.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+
+	msg = strings.TrimSpace(string(msg))
+
+	return irc.ParseMessage(msg), nil
 }
 
 // decodeIdent receives identification commands from an RFC compliant IRC

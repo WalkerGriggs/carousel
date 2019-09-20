@@ -63,21 +63,20 @@ func (s Server) accept(conn net.Conn) {
 	user := getUser(username, s.Users)
 
 	if user.Router == nil {
-		user.Router = &Router{}
+		user.Router = NewRouter(nil, user.Network)
 	}
 
-	user.Router.Client = &client
+	user.Router.Client = client
 	go user.Router.Local()
 
-	if user.Router.IRC == nil {
-
+	if user.Router.Network.Connection == nil {
 		wideConn, err := irc.Dial(user.Network.URI.Format())
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		user.Router.IRC = wideConn
-		user.Network.Identify(user.Router.IRC)
+		user.Router.Network.Connection = wideConn
+		user.Network.Identify(user.Router.Network.Connection)
 
 		go user.Router.Wide()
 	}
