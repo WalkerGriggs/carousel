@@ -16,21 +16,17 @@ type Router struct {
 	Local chan *irc.Message
 	Wide  chan *irc.Message
 
-	LocalConn Connection
+	LocalConn *Connection
 	WideConn  *irc.Conn
+
+	LocalRpl []*irc.Message
 }
 
-func NewRouter() Router {
-	return Router{
+func NewRouter() *Router {
+	return &Router{
 		Local: make(chan *irc.Message),
 		Wide:  make(chan *irc.Message),
 	}
-}
-
-func (r Router) Route() {
-	go r.LocalRead()
-	go r.WideRead()
-	go r.Write()
 }
 
 // Read reads, santizies, and forwards all messages sent from the User to the
@@ -38,7 +34,7 @@ func (r Router) Route() {
 // reader throws an error.
 //
 // Network <-> (Bouncer <- Client)
-func (r Router) LocalRead() {
+func (r *Router) LocalRead() {
 	reader := bufio.NewReader(r.LocalConn.Conn)
 
 	for {
@@ -49,8 +45,16 @@ func (r Router) LocalRead() {
 
 		msg = strings.TrimSpace(string(msg))
 
-		if irc_message := irc.ParseMessage(msg); irc_message != nil {
-			r.Wide <- irc_message
+		if parsed_msg := irc.ParseMessage(msg); parsed_msg != nil {
+			switch parsed_msg.Command {
+
+			case "QUIT":
+				r.LocalConn = nil
+				return
+
+			default:
+				r.Wide <- parsed_msg
+			}
 		}
 	}
 }
@@ -60,15 +64,20 @@ func (r Router) LocalRead() {
 // throws an error.
 //
 // (Network -> Bouncer) <-> Client
-func (r Router) WideRead() {
+func (r *Router) WideRead() {
 	for {
 		msg, err := r.WideConn.Decode()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if msg.Command == "PING" {
+		switch msg.Command {
+
+		case "PING":
 			Pong(r.WideConn, msg)
+
+		case "001", "002", "003", "004", "005":
+			r.LocalRpl = append(r.LocalRpl, msg)
 		}
 
 		r.Local <- msg
@@ -83,18 +92,36 @@ func (r Router) WideRead() {
 //
 // In its current state, this blocking process should only exit if the
 // encoder throws an error.
-func (r Router) Write() {
-	for {
-		select {
-		case msg := <-r.Local:
-			if _, err := r.LocalConn.Conn.Write([]byte(msg.String() + "\n")); err != nil {
-				log.Fatal(err)
-			}
+func (r *Router) WideWrite() {
+	for msg := range r.Wide {
+		if err := r.WideConn.Encode(msg); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
 
-		case msg := <-r.Wide:
-			if err := r.WideConn.Encode(msg); err != nil {
-				log.Fatal()
-			}
+func (r *Router) LocalWrite() {
+	for msg := range r.Local {
+
+		// Temp hack until we implement better signal handler
+		if r.LocalConn == nil {
+			return
+		}
+
+		if _, err := r.LocalConn.Conn.Write([]byte(msg.String() + "\n")); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func (r Router) LocalReply() {
+	r.localBatchSend(r.LocalRpl)
+}
+
+func (r Router) localBatchSend(messages []*irc.Message) {
+	for _, msg := range messages {
+		if _, err := r.LocalConn.Conn.Write([]byte(msg.String() + "\n")); err != nil {
+			log.Fatal(err)
 		}
 	}
 }

@@ -8,5 +8,5 @@ type User struct {
 	Password string  `json:"password"`
 	Network  Network `json:"network"`
 
-	Router Router
+	Router *Router
 }

@@ -11,8 +11,8 @@ import (
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	URI   URI    `json:"uri"`
-	Users []User `json:"users"`
+	URI   URI     `json:"uri"`
+	Users []*User `json:"users"`
 
 	Listener net.Listener
 }
@@ -57,33 +57,43 @@ func (s Server) Serve() {
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
 func (s Server) accept(conn net.Conn) {
-	router := NewRouter()
-	router.LocalConn = NewConnection(conn)
+	localConn := NewConnection(conn)
+	username := localConn.decodeIdent()
 
-	// Block until client sends PASS, NICK, and USER commands.
-	username := router.LocalConn.decodeIdent(router)
-	user := *getUser(username, s.Users)
-	user.Router = router
+	user := getUser(username, s.Users)
 
-	// Connect to Network using User configs
-	irc_conn, err := irc.Dial(user.Network.URI.Format())
-	if err != nil {
-		log.Fatal(err)
+	if user.Router == nil {
+		user.Router = NewRouter()
 	}
 
-	router.WideConn = irc_conn
+	user.Router.LocalConn = &localConn
+	go user.Router.LocalWrite()
+	go user.Router.LocalRead()
 
-	user.Network.Identify(router.WideConn)
-	go router.Route()
+	if user.Router.WideConn == nil {
+
+		wideConn, err := irc.Dial(user.Network.URI.Format())
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		user.Router.WideConn = wideConn
+		user.Network.Identify(user.Router.WideConn)
+
+		go user.Router.WideRead()
+		go user.Router.WideWrite()
+	}
+
+	user.Router.LocalReply()
 }
 
 // getUser searches the server's users and retrieves the user matching the given
 // username. This function is only a helper until a better User storage solution
 // is implemented.
-func getUser(username string, users []User) *User {
+func getUser(username string, users []*User) *User {
 	for _, user := range users {
 		if username == user.Username {
-			return &user
+			return user
 		}
 	}
 

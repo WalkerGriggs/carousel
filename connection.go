@@ -35,7 +35,7 @@ func NewConnection(conn net.Conn) Connection {
 // decodeIdent is blocking, and will not return unless all of the required
 // commands have been supplied or a timeout has been reached (to be
 // implemented).
-func (c Connection) decodeIdent(router Router) string {
+func (c Connection) decodeIdent() string {
 	messages := make(map[string]*irc.Message)
 	required_commands := []string{"USER", "NICK", "PASS"}
 
