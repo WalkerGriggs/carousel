@@ -13,120 +13,81 @@ import (
 // traffic between the User and Router, and the Wide channel handles all traffic
 // between the Router and Network
 type Router struct {
-	Local chan *irc.Message
-	Wide  chan *irc.Message
+	Client *Client
+	IRC    *irc.Conn
 
-	LocalConn *Connection
-	WideConn  *irc.Conn
-
-	LocalRpl []*irc.Message
+	ClientReplies []*irc.Message
 }
 
-func NewRouter() *Router {
-	return &Router{
-		Local: make(chan *irc.Message),
-		Wide:  make(chan *irc.Message),
-	}
-}
-
-// Read reads, santizies, and forwards all messages sent from the User to the
-// network. In its current state, this blocking process should only exit if the
-// reader throws an error.
-//
-// Network <-> (Bouncer <- Client)
-func (r *Router) LocalRead() {
-	reader := bufio.NewReader(r.LocalConn.Conn)
+// Local reads, sanitizes, and forwards all messages sent from the User to the
+// network. In its current state, this blocking process should exit if...
+//   - the reader throws an error
+//   - the encoder throws an error
+//   - the client disconnects
+func (r *Router) Local() error {
+	reader := bufio.NewReader(r.Client.Connection)
 
 	for {
 		msg, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		msg = strings.TrimSpace(string(msg))
 
 		if parsed_msg := irc.ParseMessage(msg); parsed_msg != nil {
 			switch parsed_msg.Command {
-
 			case "QUIT":
-				r.LocalConn = nil
-				return
+				r.Client = nil
+				return nil
 
 			default:
-				r.Wide <- parsed_msg
+				if err := r.IRC.Encode(parsed_msg); err != nil {
+					return err
+				}
 			}
 		}
 	}
 }
 
-// Read decodes each message sent from the Network and forwards it to the User.
-// In its current state, this blocking process should only exit if the decoder
-// throws an error.
-//
-// (Network -> Bouncer) <-> Client
-func (r *Router) WideRead() {
+// Wide reads, parses, and forwards all messages send from the network to the
+// user. In it's current state, this blocking process should exit if...
+//   - the decoder throws an error
+//   - the writer throws an error
+func (r *Router) Wide() error {
 	for {
-		msg, err := r.WideConn.Decode()
+		msg, err := r.IRC.Decode()
 		if err != nil {
-			log.Fatal(err)
+			return nil
 		}
 
 		switch msg.Command {
-
 		case "PING":
-			Pong(r.WideConn, msg)
+			Pong(r.IRC, msg)
 
 		case "001", "002", "003", "004", "005":
-			r.LocalRpl = append(r.LocalRpl, msg)
+			r.ClientReplies = append(r.ClientReplies, msg)
 		}
 
-		r.Local <- msg
-	}
-}
-
-// Write handles both sides (Wide and Local) of the connection. It...
-//    - encodes each message sent from the User and sends them off to the
-//      network.
-//    - writes all messages passed from the IRC network to the User's TCP
-//      connection.
-//
-// In its current state, this blocking process should only exit if the
-// encoder throws an error.
-func (r *Router) WideWrite() {
-	for msg := range r.Wide {
-		if err := r.WideConn.Encode(msg); err != nil {
-			log.Fatal(err)
+		if _, err := r.Client.Connection.Write([]byte(msg.String() + "\n")); err != nil {
+			return err
 		}
 	}
 }
 
-func (r *Router) LocalWrite() {
-	for msg := range r.Local {
-
-		// Temp hack until we implement better signal handler
-		if r.LocalConn == nil {
-			return
-		}
-
-		if _, err := r.LocalConn.Conn.Write([]byte(msg.String() + "\n")); err != nil {
-			log.Fatal(err)
-		}
-	}
-}
-
+// LocalReply relays the reply commands (WELCOME, YOURHOST, CREATED, MYINFO, and
+// BOUNCE) initially sent by the network to the user.
+// See RFC 2813 § 5.2.1
 func (r Router) LocalReply() {
-	r.localBatchSend(r.LocalRpl)
-}
-
-func (r Router) localBatchSend(messages []*irc.Message) {
-	for _, msg := range messages {
-		if _, err := r.LocalConn.Conn.Write([]byte(msg.String() + "\n")); err != nil {
+	for _, msg := range r.ClientReplies {
+		if _, err := r.Client.Connection.Write([]byte(msg.String() + "\n")); err != nil {
 			log.Fatal(err)
 		}
 	}
 }
 
-// Pong responds to the Network's ping with a Pong command.
+// Pong responds to the network's Ping with a Pong command.
+// See RFC 2812 § 3.7.2
 func Pong(conn *irc.Conn, msg *irc.Message) {
 	conn.Encode(&irc.Message{
 		Command: "PONG",

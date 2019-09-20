@@ -11,17 +11,17 @@ import (
 // Connection represents the connection between the User and the Server. Each
 // connection maintains a network connection, accepted in the Server's main
 // event loop.
-type Connection struct {
-	Conn    net.Conn
-	Encoder *irc.Encoder
-	Decoder *irc.Decoder
+type Client struct {
+	Connection net.Conn
+	Encoder    *irc.Encoder
+	Decoder    *irc.Decoder
 }
 
-func NewConnection(conn net.Conn) Connection {
-	return Connection{
-		Conn:    conn,
-		Encoder: irc.NewEncoder(conn),
-		Decoder: irc.NewDecoder(conn),
+func NewClient(conn net.Conn) Client {
+	return Client{
+		Connection: conn,
+		Encoder:    irc.NewEncoder(conn),
+		Decoder:    irc.NewDecoder(conn),
 	}
 }
 
@@ -35,7 +35,7 @@ func NewConnection(conn net.Conn) Connection {
 // decodeIdent is blocking, and will not return unless all of the required
 // commands have been supplied or a timeout has been reached (to be
 // implemented).
-func (c Connection) decodeIdent() string {
+func (c Client) decodeIdent() string {
 	messages := make(map[string]*irc.Message)
 	required_commands := []string{"USER", "NICK", "PASS"}
 

@@ -57,31 +57,29 @@ func (s Server) Serve() {
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
 func (s Server) accept(conn net.Conn) {
-	localConn := NewConnection(conn)
-	username := localConn.decodeIdent()
+	client := NewClient(conn)
+	username := client.decodeIdent()
 
 	user := getUser(username, s.Users)
 
 	if user.Router == nil {
-		user.Router = NewRouter()
+		user.Router = &Router{}
 	}
 
-	user.Router.LocalConn = &localConn
-	go user.Router.LocalWrite()
-	go user.Router.LocalRead()
+	user.Router.Client = &client
+	go user.Router.Local()
 
-	if user.Router.WideConn == nil {
+	if user.Router.IRC == nil {
 
 		wideConn, err := irc.Dial(user.Network.URI.Format())
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		user.Router.WideConn = wideConn
-		user.Network.Identify(user.Router.WideConn)
+		user.Router.IRC = wideConn
+		user.Network.Identify(user.Router.IRC)
 
-		go user.Router.WideRead()
-		go user.Router.WideWrite()
+		go user.Router.Wide()
 	}
 
 	user.Router.LocalReply()
