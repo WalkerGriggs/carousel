@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"gopkg.in/sorcix/irc.v2"
 )
 
@@ -33,6 +31,16 @@ func (n Network) Receive() (*irc.Message, error) {
 	return n.Connection.Decode()
 }
 
+func (n Network) BatchSend(messages []*irc.Message) error {
+	for _, msg := range messages {
+		if err := n.Send(msg); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Pong responds to the network's Ping with a Pong command.
 // See RFC 2812 § 3.7.2
 func (n Network) Pong(msg *irc.Message) {
@@ -44,33 +52,25 @@ func (n Network) Pong(msg *irc.Message) {
 
 // Identify handles connection registration for each user.
 // Again, see RFC 2812 § 3.1
-func (net Network) Identify(conn *irc.Conn) {
+func (n Network) Identify(conn *irc.Conn) {
 	var messages []*irc.Message
 
-	if net.Ident.Password != "" {
+	if n.Ident.Password != "" {
 		messages = append(messages, &irc.Message{
 			Command: irc.PASS,
-			Params:  []string{net.Ident.Password},
+			Params:  []string{n.Ident.Password},
 		})
 	}
 
 	messages = append(messages, &irc.Message{
 		Command: irc.NICK,
-		Params:  []string{net.Ident.Nickname},
+		Params:  []string{n.Ident.Nickname},
 	})
 
 	messages = append(messages, &irc.Message{
 		Command: irc.USER,
-		Params:  []string{net.Ident.Username, "0", "*", net.Ident.Realname},
+		Params:  []string{n.Ident.Username, "0", "*", n.Ident.Realname},
 	})
 
-	batchSend(messages, conn)
-}
-
-func batchSend(messages []*irc.Message, conn *irc.Conn) {
-	for _, msg := range messages {
-		if err := conn.Encode(msg); err != nil {
-			log.Fatal("Err: %s \n%s\n", err, msg)
-		}
-	}
+	n.BatchSend(messages)
 }

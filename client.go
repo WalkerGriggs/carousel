@@ -54,7 +54,7 @@ func (c Client) Receive() (*irc.Message, error) {
 // decodeIdent is blocking, and will not return unless all of the required
 // commands have been supplied or a timeout has been reached (to be
 // implemented).
-func (c Client) decodeIdent() string {
+func (c Client) decodeIdent() Identity {
 	messages := make(map[string]*irc.Message)
 	required_commands := []string{"USER", "NICK", "PASS"}
 
@@ -71,8 +71,16 @@ func (c Client) decodeIdent() string {
 		}
 	}
 
-	// TODO: Proper login logic
-	return messages["USER"].Params[0]
+	return parseIdent(messages)
+}
+
+func parseIdent(messages map[string]*irc.Message) Identity {
+	return Identity{
+		Nickname: messages["NICK"].Params[0],
+		Username: messages["USER"].Params[0],
+		Realname: messages["USER"].Params[3],
+		Password: messages["PASS"].Params[0],
+	}
 }
 
 // containsAll checks to see if the message map contains all of the required

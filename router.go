@@ -36,7 +36,6 @@ func NewRouter(client *Client, network *Network) *Router {
 //   - the client disconnects
 func (r *Router) Local() error {
 	for {
-		//msg, err := reader.ReadString('\n')
 		msg, err := r.Client.Receive()
 		if err != nil {
 			return err

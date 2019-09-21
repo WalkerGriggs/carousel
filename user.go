@@ -9,3 +9,10 @@ type User struct {
 	Network  *Network `json:"network"`
 	Router   *Router
 }
+
+// Authorized compares the given password with the password hash stored in the
+// config. The user's password isn't stored in plaintext (for very obvious
+// reasons, so we have to hash and salt the supplied password before comparing)
+func (u User) Authorized(ident Identity) bool {
+	return hashesMatch(u.Password, ident.Password)
+}

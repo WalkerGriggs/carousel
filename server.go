@@ -57,18 +57,36 @@ func (s Server) Serve() {
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
 func (s Server) accept(conn net.Conn) {
-	client := NewClient(conn)
-	username := client.decodeIdent()
 
-	user := getUser(username, s.Users)
+	// Get identity information from user. This identity information is used to
+	// authenticate with the server -- not the network.
+	client := NewClient(conn)
+	ident := client.decodeIdent()
+
+	// Get the user the connecting client is authenticating against.
+	user := s.getUser(ident.Username)
+
+	// If the authentication fails, send them err 464 and short circuit
+	if !user.Authorized(ident) {
+		client.Send(&irc.Message{
+			Command: irc.ERR_PASSWDMISMATCH,
+			Params:  []string{"irc.carousel.in", ident.Nickname, "Password incorrect"},
+		})
+
+		return
+	}
 
 	if user.Router == nil {
 		user.Router = NewRouter(nil, user.Network)
 	}
 
+	// Attach the Client connection to the User's Router
 	user.Router.Client = client
 	go user.Router.Local()
 
+	// Connect to the network if not already connected. This should only happen
+	// the first time the User connects, the Server should remain connected even
+	// after the Client disconnects.
 	if user.Router.Network.Connection == nil {
 		wideConn, err := irc.Dial(user.Network.URI.Format())
 		if err != nil {
@@ -77,7 +95,6 @@ func (s Server) accept(conn net.Conn) {
 
 		user.Router.Network.Connection = wideConn
 		user.Network.Identify(user.Router.Network.Connection)
-
 		go user.Router.Wide()
 	}
 
@@ -87,8 +104,8 @@ func (s Server) accept(conn net.Conn) {
 // getUser searches the server's users and retrieves the user matching the given
 // username. This function is only a helper until a better User storage solution
 // is implemented.
-func getUser(username string, users []*User) *User {
-	for _, user := range users {
+func (s Server) getUser(username string) *User {
+	for _, user := range s.Users {
 		if username == user.Username {
 			return user
 		}

@@ -18,7 +18,6 @@ func hash(s string) string {
 
 func hashesMatch(hash, s string) bool {
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(s)); err != nil {
-		log.Println(err)
 		return false
 	}
 
