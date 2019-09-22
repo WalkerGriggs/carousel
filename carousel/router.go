@@ -1,4 +1,4 @@
-package main
+package carousel
 
 import (
 	"log"
@@ -16,10 +16,9 @@ type Connection interface {
 // traffic between the User and Router, and the Wide channel handles all traffic
 // between the Router and Network
 type Router struct {
-	Client  *Client
-	Network *Network
-
-	ClientReplies []*irc.Message
+	Client        *Client        `json:",omitempty"`
+	Network       *Network       `json:",omitempty"`
+	ClientReplies []*irc.Message `json:",omitempty"`
 }
 
 func NewRouter(client *Client, network *Network) *Router {

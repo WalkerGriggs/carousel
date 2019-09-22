@@ -1,4 +1,4 @@
-package main
+package carousel
 
 import (
 	"gopkg.in/sorcix/irc.v2"
@@ -7,11 +7,10 @@ import (
 // Network represents an IRC network. Each network has a URI, and, because Users
 // own the Network object, each Network stores the User's Identity as well.
 type Network struct {
-	Connection *irc.Conn
-
-	Name  string   `json:"name"`
-	URI   URI      `json:"uri"`
-	Ident Identity `json:"ident"`
+	Connection *irc.Conn `json:",omitempty"`
+	Name       string    `json:"name"`
+	URI        URI       `json:"uri"`
+	Ident      Identity  `json:"ident"`
 }
 
 // Identity represnts the necessary information to authenticate with a Network.

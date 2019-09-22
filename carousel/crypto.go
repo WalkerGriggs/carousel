@@ -1,22 +1,20 @@
-package main
+package carousel
 
 import (
-	"log"
-
 	"golang.org/x/crypto/bcrypt"
 )
 
-func hash(s string) string {
+func Hash(s string) (string, error) {
 	bytes := []byte(s)
 	hash, err := bcrypt.GenerateFromPassword(bytes, bcrypt.MinCost)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	return string(hash)
+	return string(hash), nil
 }
 
-func hashesMatch(hash, s string) bool {
+func HashesMatch(hash, s string) bool {
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(s)); err != nil {
 		return false
 	}

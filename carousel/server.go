@@ -1,4 +1,4 @@
-package main
+package carousel
 
 import (
 	"fmt"
@@ -11,10 +11,9 @@ import (
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	URI   URI     `json:"uri"`
-	Users []*User `json:"users"`
-
-	Listener net.Listener
+	URI      URI          `json:"uri"`
+	Users    []*User      `json:"users"`
+	Listener net.Listener `json:",omitempty"`
 }
 
 // URI is the basic information needed to address Networks and Servers. URI is
@@ -64,7 +63,7 @@ func (s Server) accept(conn net.Conn) {
 	ident := client.decodeIdent()
 
 	// Get the user the connecting client is authenticating against.
-	user := s.getUser(ident.Username)
+	user := s.GetUser(ident.Username)
 
 	// If the authentication fails, send them err 464 and short circuit
 	if !user.Authorized(ident) {
@@ -104,8 +103,12 @@ func (s Server) accept(conn net.Conn) {
 // getUser searches the server's users and retrieves the user matching the given
 // username. This function is only a helper until a better User storage solution
 // is implemented.
-func (s Server) getUser(username string) *User {
-	for _, user := range s.Users {
+func (s Server) GetUser(username string) *User {
+	return GetUser(s.Users, username)
+}
+
+func GetUser(users []*User, username string) *User {
+	for _, user := range users {
 		if username == user.Username {
 			return user
 		}
