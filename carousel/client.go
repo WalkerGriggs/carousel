@@ -1,4 +1,4 @@
-package main
+package carousel
 
 import (
 	"bufio"
@@ -13,10 +13,10 @@ import (
 // connection maintains a network connection, accepted in the Server's main
 // event loop.
 type Client struct {
-	Connection net.Conn
-	Encoder    *irc.Encoder
-	Decoder    *irc.Decoder
-	Reader     *bufio.Reader
+	Connection net.Conn      `json:",omitempty"`
+	Encoder    *irc.Encoder  `json:",omitempty"`
+	Decoder    *irc.Decoder  `json:",omitempty"`
+	Reader     *bufio.Reader `json:",omitempty"`
 }
 
 func NewClient(conn net.Conn) *Client {
