@@ -1,18 +1,12 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"log"
-	"strconv"
 
-	tui "github.com/manifoldco/promptui"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
-
-	"github.com/walkergriggs/carousel/carousel"
 )
 
 var config_file string

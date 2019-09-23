@@ -1,12 +1,17 @@
 package cmd
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 
 	tui "github.com/manifoldco/promptui"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+
+	"github.com/walkergriggs/carousel/carousel"
 )
 
 // menuCmd represents the menu command
