@@ -22,6 +22,17 @@ type Identity struct {
 	Password string `json:"password"`
 }
 
+func (n *Network) Connect() error {
+	wideConn, err := irc.Dial(n.URI.Format())
+	if err != nil {
+		return err
+	}
+	n.Connection = wideConn
+	n.Identify()
+
+	return nil
+}
+
 func (n Network) Send(msg *irc.Message) error {
 	return n.Connection.Encode(msg)
 }
@@ -51,7 +62,7 @@ func (n Network) Pong(msg *irc.Message) {
 
 // Identify handles connection registration for each user.
 // Again, see RFC 2812 § 3.1
-func (n Network) Identify(conn *irc.Conn) {
+func (n Network) Identify() {
 	var messages []*irc.Message
 
 	if n.Ident.Password != "" {

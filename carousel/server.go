@@ -87,13 +87,11 @@ func (s Server) accept(conn net.Conn) {
 	// the first time the User connects, the Server should remain connected even
 	// after the Client disconnects.
 	if user.Router.Network.Connection == nil {
-		wideConn, err := irc.Dial(user.Network.URI.Format())
+		err := user.Router.Network.Connect()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		user.Router.Network.Connection = wideConn
-		user.Network.Identify(user.Router.Network.Connection)
 		go user.Router.Wide()
 	}
 
