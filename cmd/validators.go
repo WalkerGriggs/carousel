@@ -1,34 +1,43 @@
 package cmd
 
 import (
-	"errors"
-	"strconv"
+	"regexp"
+
+	"github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
 )
 
-// Valid password returns and error if password requirements haven't been met.
-// TODO more formal password validation
-func validatePassword(input string) error {
-	if len(input) < 10 || len(input) > 64 {
-		return errors.New("Password must be between 10 and 64 characters long")
-	}
-	return nil
+func validate_password(val interface{}) error {
+	return validation.Validate(val,
+		validation.Required,
+		validation.Length(8, 32),
+		validation.Match(regexp.MustCompile(`^[\w\d@%+/'!#$^?;,()-_.]+$`)),
+	)
 }
 
-// validatePort return an error if the input string doesn't represent an
-// integer, or isn't within the valid port range (1 - 65535)
-func validatePort(input string) error {
-	i, err := strconv.Atoi(input)
-	if err != nil || i < 1 || i > 65535 {
-		return errors.New("Invalid port number! The port should be an integer between 1 and 65535.")
-	}
-
-	return nil
+func validate_username(val interface{}) error {
+	return validation.Validate(val,
+		validation.Required,
+		validation.Length(3, 16),
+		validation.Match(regexp.MustCompile(`^[\w\d]+$`)),
+	)
 }
 
-// validateNotEmpty return an error if the input string is empty.
-func validateNotEmpty(input string) error {
-	if input == "" {
-		return errors.New("Empty!")
-	}
-	return nil
+func validate_host(val interface{}) error {
+	return validate_string_rule(val, is.Host)
+}
+
+func validate_port(val interface{}) error {
+	return validate_string_rule(val, is.Port)
+}
+
+func validate_alphanumeric(val interface{}) error {
+	return validate_string_rule(val, is.Alphanumeric)
+}
+
+func validate_string_rule(val interface{}, rule *validation.StringRule) error {
+	return validation.Validate(val,
+		validation.Required,
+		rule,
+	)
 }
