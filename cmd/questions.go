@@ -17,7 +17,7 @@ var ident_questions = []*survey.Question{
 	},
 	{
 		Name:   "realname",
-		Prompt: &survey.Input{Message: "Read name (Optional)?"},
+		Prompt: &survey.Input{Message: "Real name (Optional)?"},
 	},
 	{
 		Name:   "password",
@@ -38,6 +38,7 @@ var uri_questions = []*survey.Question{
 		Name: "address",
 		Prompt: &survey.Input{
 			Message: "Hostname or IP?",
+			Default: "0.0.0.0",
 		},
 		Validate: survey.Required,
 	},
@@ -45,6 +46,7 @@ var uri_questions = []*survey.Question{
 		Name: "port",
 		Prompt: &survey.Input{
 			Message: "Port?",
+			Default: "6667",
 		},
 		Validate: survey.Required,
 	},

@@ -32,7 +32,13 @@ var configCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 
-			ioutil.WriteFile(home+"/.carousel/config.json", js, 0644)
+			if config_file == "" {
+				config_file = home + "/.carousel/config.json"
+			}
+
+			if err := ioutil.WriteFile(config_file, js, 0644); err != nil {
+				log.Fatal(err)
+			}
 		}
 	},
 }
