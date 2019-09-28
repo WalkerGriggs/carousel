@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/walkergriggs/carousel/carousel"
+	"github.com/walkergriggs/carousel/server"
 )
 
 // serveCmd represents the serve command
@@ -25,13 +25,13 @@ func init() {
 }
 
 func serve() {
-	var c carousel.Server
+	var c server.Server
 
 	if err := viper.Unmarshal(&c); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Listening on ", c.URI.Format())
+	fmt.Println("Listening on ", c.URI.String())
 
 	c.Serve()
 }

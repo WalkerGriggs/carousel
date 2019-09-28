@@ -35,7 +35,7 @@ var network_questions = []*survey.Question{
 
 var uri_questions = []*survey.Question{
 	{
-		Name: "address",
+		Name: "host",
 		Prompt: &survey.Input{
 			Message: "Hostname or IP?",
 			Default: "0.0.0.0",
