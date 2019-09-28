@@ -29,7 +29,7 @@ var network_questions = []*survey.Question{
 	{
 		Name:     "name",
 		Prompt:   &survey.Input{Message: "What are we calling this network?"},
-		Validate: survey.Required,
+		Validate: validate_alphanumeric,
 	},
 }
 
@@ -40,7 +40,7 @@ var uri_questions = []*survey.Question{
 			Message: "Hostname or IP?",
 			Default: "0.0.0.0",
 		},
-		Validate: survey.Required,
+		Validate: validate_host,
 	},
 	{
 		Name: "port",
@@ -48,7 +48,7 @@ var uri_questions = []*survey.Question{
 			Message: "Port?",
 			Default: "6667",
 		},
-		Validate: survey.Required,
+		Validate: validate_port,
 	},
 }
 
@@ -56,11 +56,11 @@ var user_questions = []*survey.Question{
 	{
 		Name:     "username",
 		Prompt:   &survey.Input{Message: "Username?"},
-		Validate: survey.Required,
+		Validate: validate_username,
 	},
 	{
 		Name:     "password",
 		Prompt:   &survey.Password{Message: "Password?"},
-		Validate: survey.Required,
+		Validate: validate_password,
 	},
 }
