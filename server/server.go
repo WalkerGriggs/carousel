@@ -1,22 +1,21 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"net"
-	"net/url"
 
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/client"
 	"github.com/walkergriggs/carousel/router"
+	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
 
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	URL      url.URL      `json:"url"`
+	URI      uri.URI      `json:"uri"`
 	Users    []*user.User `json:"users"`
 	Listener net.Listener `json:",omitempty"`
 }
@@ -26,7 +25,7 @@ type Server struct {
 // only return if the TCP listener closes or errors (even if there are no active
 // connections).
 func (s Server) Serve() {
-	l, err := net.Listen("tcp", s.URL.Host) //s.URL.String())
+	l, err := net.Listen("tcp", s.URI.String())
 	if err != nil {
 		log.Fatal(err)
 	}

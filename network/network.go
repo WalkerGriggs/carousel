@@ -1,9 +1,9 @@
 package network
 
 import (
-	"net/url"
-
 	"gopkg.in/sorcix/irc.v2"
+
+	"github.com/walkergriggs/carousel/uri"
 )
 
 // Network represents an IRC network. Each network has a URI, and, because Users
@@ -11,7 +11,7 @@ import (
 type Network struct {
 	Connection *irc.Conn `json:",omitempty"`
 	Name       string    `json:"name"`
-	URL        url.URL   `json:"url"`
+	URI        uri.URI   `json:"uri"`
 	Ident      Identity  `json:"ident"`
 }
 
@@ -25,7 +25,7 @@ type Identity struct {
 }
 
 func (n *Network) Connect() error {
-	conn, err := irc.Dial(n.URL.Host)
+	conn, err := irc.Dial(n.URI.String())
 	if err != nil {
 		return err
 	}
