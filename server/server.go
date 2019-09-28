@@ -1,31 +1,23 @@
-package carousel
+package server
 
 import (
-	"fmt"
 	"log"
 	"net"
 
 	"gopkg.in/sorcix/irc.v2"
+
+	"github.com/walkergriggs/carousel/client"
+	"github.com/walkergriggs/carousel/router"
+	"github.com/walkergriggs/carousel/uri"
+	"github.com/walkergriggs/carousel/user"
 )
 
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	URI      URI          `json:"uri"`
-	Users    []*User      `json:"users"`
+	URI      uri.URI      `json:"uri"`
+	Users    []*user.User `json:"users"`
 	Listener net.Listener `json:",omitempty"`
-}
-
-// URI is the basic information needed to address Networks and Servers. URI is
-// not an exhaustive liste of all URI components, and will be extended in future
-// implementations.
-type URI struct {
-	Address string `json:"address"`
-	Port    int    `json:"port"`
-}
-
-func (uri URI) Format() string {
-	return fmt.Sprintf("%s:%d", uri.Address, uri.Port)
 }
 
 // Serve attaches a tcp listener to the specificed URI, and starts the main
@@ -33,7 +25,7 @@ func (uri URI) Format() string {
 // only return if the TCP listener closes or errors (even if there are no active
 // connections).
 func (s Server) Serve() {
-	l, err := net.Listen("tcp", s.URI.Format())
+	l, err := net.Listen("tcp", s.URI.String())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,15 +51,15 @@ func (s Server) accept(conn net.Conn) {
 
 	// Get identity information from user. This identity information is used to
 	// authenticate with the server -- not the network.
-	client := NewClient(conn)
-	ident := client.decodeIdent()
+	c := client.NewClient(conn)
+	ident := c.DecodeIdent()
 
 	// Get the user the connecting client is authenticating against.
-	user := s.GetUser(ident.Username)
+	u := s.GetUser(ident.Username)
 
 	// If the authentication fails, send them err 464 and short circuit
-	if !user.Authorized(ident) {
-		client.Send(&irc.Message{
+	if !u.Authorized(ident) {
+		c.Send(&irc.Message{
 			Command: irc.ERR_PASSWDMISMATCH,
 			Params:  []string{"irc.carousel.in", ident.Nickname, "Password incorrect"},
 		})
@@ -75,37 +67,37 @@ func (s Server) accept(conn net.Conn) {
 		return
 	}
 
-	if user.Router == nil {
-		user.Router = NewRouter(nil, user.Network)
+	if u.Router == nil {
+		u.Router = router.NewRouter(nil, u.Network)
 	}
 
 	// Attach the Client connection to the User's Router
-	user.Router.Client = client
-	go user.Router.Local()
+	u.Router.Client = c
+	go u.Router.Local()
 
 	// Connect to the network if not already connected. This should only happen
 	// the first time the User connects, the Server should remain connected even
 	// after the Client disconnects.
-	if user.Router.Network.Connection == nil {
-		err := user.Router.Network.Connect()
+	if u.Router.Network.Connection == nil {
+		err := u.Router.Network.Connect()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		go user.Router.Wide()
+		go u.Router.Wide()
 	}
 
-	user.Router.LocalReply()
+	u.Router.LocalReply()
 }
 
 // getUser searches the server's users and retrieves the user matching the given
 // username. This function is only a helper until a better User storage solution
 // is implemented.
-func (s Server) GetUser(username string) *User {
+func (s Server) GetUser(username string) *user.User {
 	return GetUser(s.Users, username)
 }
 
-func GetUser(users []*User, username string) *User {
+func GetUser(users []*user.User, username string) *user.User {
 	for _, user := range users {
 		if username == user.Username {
 			return user
