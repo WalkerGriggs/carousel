@@ -23,11 +23,11 @@ type Identity struct {
 }
 
 func (n *Network) Connect() error {
-	wideConn, err := irc.Dial(n.URI.Format())
+	conn, err := irc.Dial(n.URI.Format())
 	if err != nil {
 		return err
 	}
-	n.Connection = wideConn
+	n.Connection = conn
 	n.Identify()
 
 	return nil
