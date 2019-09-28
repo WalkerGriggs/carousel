@@ -2,19 +2,12 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 
-	"github.com/AlecAivazis/survey"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-
-	"github.com/walkergriggs/carousel/crypto"
-	"github.com/walkergriggs/carousel/network"
-	"github.com/walkergriggs/carousel/server"
-	"github.com/walkergriggs/carousel/uri"
-	"github.com/walkergriggs/carousel/user"
 )
 
 // menuCmd represents the menu command
@@ -26,7 +19,7 @@ var configCmd = &cobra.Command{
 		if survey_confirm("This command will overwrite any existing config. Continue?") {
 			server := survey_server()
 
-			home, err := homedir.Dir()
+			path, err := config_path()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -36,11 +29,7 @@ var configCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 
-			if config_file == "" {
-				config_file = home + "/.carousel/config.json"
-			}
-
-			if err := ioutil.WriteFile(config_file, js, 0644); err != nil {
+			if err := ioutil.WriteFile(path, js, 0644); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -51,89 +40,24 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 }
 
-func survey_server() server.Server {
-	fmt.Println("Lets start with Carousel's address.")
-	uri := survey_uri()
-
-	fmt.Println("Now, we need to set up an admin user.")
-	admin := survey_user()
-
-	server := server.Server{
-		Users: []*user.User{&admin},
-		URI:   uri,
-	}
-
-	return server
-}
-
-func survey_user() user.User {
-	var user user.User
-	if err := survey.Ask(user_questions, &user); err != nil {
-		log.Fatal(err)
-	}
-
-	hashed_pass, err := crypto.Hash(user.Password)
+// config_path gets the absolute path of the configuration file. If the config
+// path is not specified, the default '$HOME/carousel/config.json' is used
+// instead.
+func config_path() (string, error) {
+	home, err := homedir.Dir()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	user.Password = hashed_pass
-
-	if survey_confirm("Do you want to setup a Network for this user?") {
-		net := survey_network()
-		user.Network = &net
+	// If config file is not specified, use default instead
+	if config_file == "" {
+		config_file = home + "/.carousel/config.json"
 	}
 
-	return user
-}
-
-func survey_network() network.Network {
-	var net network.Network
-	if err := survey.Ask(network_questions, &net); err != nil {
-		log.Fatal(err)
+	// Create .carousel directory if it does not exist
+	if stat, err := os.Stat(config_file); err == nil && !stat.IsDir() {
+		os.MkdirAll(home+"/.carousel", os.ModePerm)
 	}
 
-	fmt.Println("Where can we find this network?")
-	net.URI = survey_uri()
-
-	fmt.Println("Almost done! We just need to get your network identity.")
-	net.Ident = survey_identity()
-
-	return net
-}
-
-func survey_uri() uri.URI {
-	var uri uri.URI
-	if err := survey.Ask(uri_questions, &uri); err != nil {
-		log.Fatal(err)
-	}
-
-	return uri
-}
-
-func survey_identity() network.Identity {
-	var ident network.Identity
-	err := survey.Ask(ident_questions, &ident)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if ident.Password != "" {
-		hashed_pass, err := crypto.Hash(ident.Password)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		ident.Password = hashed_pass
-	}
-	return ident
-}
-
-func survey_confirm(prompt string) bool {
-	b := false
-	confirm := &survey.Confirm{
-		Message: prompt,
-	}
-	survey.AskOne(confirm, &b)
-	return b
+	return config_file, nil
 }
