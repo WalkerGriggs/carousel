@@ -1,4 +1,4 @@
-package carousel
+package client
 
 import (
 	"bufio"
@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"gopkg.in/sorcix/irc.v2"
+
+	"github.com/walkergriggs/carousel/network"
 )
 
 // Connection represents the connection between the User and the Server. Each
@@ -54,7 +56,7 @@ func (c Client) Receive() (*irc.Message, error) {
 // decodeIdent is blocking, and will not return unless all of the required
 // commands have been supplied or a timeout has been reached (to be
 // implemented).
-func (c Client) decodeIdent() Identity {
+func (c Client) DecodeIdent() network.Identity {
 	messages := make(map[string]*irc.Message)
 	required_commands := []string{"USER", "NICK", "PASS"}
 
@@ -74,8 +76,8 @@ func (c Client) decodeIdent() Identity {
 	return parseIdent(messages)
 }
 
-func parseIdent(messages map[string]*irc.Message) Identity {
-	return Identity{
+func parseIdent(messages map[string]*irc.Message) network.Identity {
+	return network.Identity{
 		Nickname: messages["NICK"].Params[0],
 		Username: messages["USER"].Params[0],
 		Realname: messages["USER"].Params[3],

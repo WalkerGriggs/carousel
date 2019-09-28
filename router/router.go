@@ -1,9 +1,12 @@
-package carousel
+package router
 
 import (
 	"log"
 
 	"gopkg.in/sorcix/irc.v2"
+
+	"github.com/walkergriggs/carousel/client"
+	"github.com/walkergriggs/carousel/network"
 )
 
 type Connection interface {
@@ -16,12 +19,12 @@ type Connection interface {
 // traffic between the User and Router, and the Wide channel handles all traffic
 // between the Router and Network
 type Router struct {
-	Client        *Client        `json:",omitempty"`
-	Network       *Network       `json:",omitempty"`
-	ClientReplies []*irc.Message `json:",omitempty"`
+	Client        *client.Client   `json:",omitempty"`
+	Network       *network.Network `json:",omitempty"`
+	ClientReplies []*irc.Message   `json:",omitempty"`
 }
 
-func NewRouter(client *Client, network *Network) *Router {
+func NewRouter(client *client.Client, network *network.Network) *Router {
 	return &Router{
 		Network: network,
 		Client:  client,

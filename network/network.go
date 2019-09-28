@@ -1,6 +1,8 @@
-package carousel
+package network
 
 import (
+	"net/url"
+
 	"gopkg.in/sorcix/irc.v2"
 )
 
@@ -9,7 +11,7 @@ import (
 type Network struct {
 	Connection *irc.Conn `json:",omitempty"`
 	Name       string    `json:"name"`
-	URI        URI       `json:"uri"`
+	URL        url.URL   `json:"url"`
 	Ident      Identity  `json:"ident"`
 }
 
@@ -23,7 +25,7 @@ type Identity struct {
 }
 
 func (n *Network) Connect() error {
-	conn, err := irc.Dial(n.URI.Format())
+	conn, err := irc.Dial(n.URL.Host)
 	if err != nil {
 		return err
 	}
