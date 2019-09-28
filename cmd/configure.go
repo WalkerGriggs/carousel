@@ -114,12 +114,14 @@ func survey_identity() carousel.Identity {
 		log.Fatal(err)
 	}
 
-	hashed_pass, err := carousel.Hash(ident.Password)
-	if err != nil {
-		log.Fatal(err)
-	}
+	if ident.Password != "" {
+		hashed_pass, err := carousel.Hash(ident.Password)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	ident.Password = hashed_pass
+		ident.Password = hashed_pass
+	}
 	return ident
 }
 
