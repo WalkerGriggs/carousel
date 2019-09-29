@@ -63,8 +63,15 @@ func (r *Router) Local() error {
 //   - the decoder throws an error
 //   - the writer throws an error
 func (r *Router) Wide() error {
+	// Connect to network if not already connected. This should only happen the
+	// the first time the User conncets, as this Wide routine should only exit if
+	// it encounters a Connection issue.
+	err := r.Network.Connect()
+	if err != nil {
+		return err
+	}
+
 	for {
-		//msg, err := r.IRC.Decode()
 		msg, err := r.Network.Receive()
 		if err != nil {
 			return nil
