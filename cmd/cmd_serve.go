@@ -4,9 +4,6 @@ import (
 	_ "fmt"
 	"log"
 
-	"encoding/json"
-	"io/ioutil"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -31,11 +28,6 @@ func serve() {
 	var c server.Server
 
 	if err := viper.Unmarshal(&c); err != nil {
-		log.Fatal(err)
-	}
-
-	js, err := json.MarshalIndent(c, "", "    ")
-	if err != nil {
 		log.Fatal(err)
 	}
 
