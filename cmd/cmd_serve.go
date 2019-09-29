@@ -1,13 +1,16 @@
 package cmd
 
 import (
-	"fmt"
+	_ "fmt"
 	"log"
+
+	"encoding/json"
+	"io/ioutil"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/walkergriggs/carousel/carousel"
+	"github.com/walkergriggs/carousel/server"
 )
 
 // serveCmd represents the serve command
@@ -25,13 +28,19 @@ func init() {
 }
 
 func serve() {
-	var c carousel.Server
+	var c server.Server
 
 	if err := viper.Unmarshal(&c); err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Listening on ", c.URI.Format())
+	js, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := ioutil.WriteFile("/home/wgriggs/.carousel/config.json.other", js, 0644); err != nil {
+		log.Fatal(err)
+	}
 
 	c.Serve()
 }
