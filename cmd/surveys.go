@@ -88,6 +88,11 @@ func survey_identity() network.Identity {
 
 		ident.Password = hashed_pass
 	}
+
+	if ident.Realname == "" {
+		ident.Realname = ident.Username
+	}
+
 	return ident
 }
 
