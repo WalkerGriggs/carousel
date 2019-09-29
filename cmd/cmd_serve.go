@@ -38,9 +38,6 @@ func serve() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := ioutil.WriteFile("/home/wgriggs/.carousel/config.json.other", js, 0644); err != nil {
-		log.Fatal(err)
-	}
 
 	c.Serve()
 }
