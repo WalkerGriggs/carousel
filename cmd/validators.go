@@ -9,9 +9,9 @@ import (
 
 func validate_password(val interface{}) error {
 	return validation.Validate(val,
-		validation.Required,       // not empty
-		validation.Length(10, 32), // length between 5 and 100
-		validation.Match(regexp.MustCompile(`^[a-zA-Z@%+/'!#$^?;,()-_.]+$`)),
+		validation.Required,
+		validation.Length(8, 32),
+		validation.Match(regexp.MustCompile(`^[\w\d@%+/'!#$^?;,()-_.]+$`)),
 	)
 }
 

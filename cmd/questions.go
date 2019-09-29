@@ -17,11 +17,11 @@ var ident_questions = []*survey.Question{
 	},
 	{
 		Name:   "realname",
-		Prompt: &survey.Input{Message: "Real name (Optional)?"},
+		Prompt: &survey.Input{Message: "Real name (defaults to User)?"},
 	},
 	{
 		Name:   "password",
-		Prompt: &survey.Password{Message: "Password (Probably optional)?"},
+		Prompt: &survey.Password{Message: "Password (optional)?"},
 	},
 }
 

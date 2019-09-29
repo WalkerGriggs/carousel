@@ -19,12 +19,12 @@ var configCmd = &cobra.Command{
 		if survey_confirm("This command will overwrite any existing config. Continue?") {
 			server := survey_server()
 
-			path, err := config_path()
+			js, err := json.MarshalIndent(server, "", "    ")
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			js, err := json.MarshalIndent(server, "", "    ")
+			path, err := config_path()
 			if err != nil {
 				log.Fatal(err)
 			}
