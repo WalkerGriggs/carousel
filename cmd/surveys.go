@@ -14,21 +14,22 @@ import (
 )
 
 func survey_server() server.Server {
+	var server server.Server
+
 	fmt.Println("Lets start with Carousel's address.")
-	uri := survey_uri()
+	server.URI = survey_uri()
+
+	if err := survey.Ask(server_questions, &server); err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("Now, we need to set up an admin user.")
-	admin := survey_user()
-
-	server := server.Server{
-		Users: []*user.User{&admin},
-		URI:   uri,
-	}
+	server.Users = []*user.User{survey_user()}
 
 	return server
 }
 
-func survey_user() user.User {
+func survey_user() *user.User {
 	var user user.User
 	if err := survey.Ask(user_questions, &user); err != nil {
 		log.Fatal(err)
@@ -46,7 +47,7 @@ func survey_user() user.User {
 		user.Network = &net
 	}
 
-	return user
+	return &user
 }
 
 func survey_network() network.Network {
