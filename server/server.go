@@ -2,7 +2,6 @@ package server
 
 import (
 	"crypto/tls"
-	"fmt"
 	"log"
 	"net"
 
@@ -54,11 +53,11 @@ func (s Server) listener() (net.Listener, error) {
 
 	cert, err := ssl.LoadPem(s.CertificatePath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	config := &tls.Config{Certificates: []tls.Certificate{*cert}}
-	return tls.Listen("tcp", fmt.Sprintf(":%d", s.URI.Port), config)
+	return tls.Listen("tcp", s.URI.String(), config)
 }
 
 // Accept establishes a new connection with the accepted TCP client, and spawns
