@@ -6,8 +6,11 @@ import (
 
 var server_questions = []*survey.Question{
 	{
-		Name:     "sslEnabled",
-		Prompt:   &survey.Confirm{Message: "Enable SSL?"},
+		Name: "sslEnabled",
+		Prompt: &survey.Confirm{
+			Message: "Enable SSL?",
+			Default: true,
+		},
 		Validate: survey.Required,
 	},
 }

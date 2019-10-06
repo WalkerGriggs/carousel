@@ -9,8 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var config_file string
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "carousel",
@@ -27,23 +25,17 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&config_file, "config", "", "config file (default is $HOME/.carousel/config.json)")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if config_file != "" {
-		viper.SetConfigFile(config_file)
-	} else {
-		home, err := homedir.Dir()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		viper.AddConfigPath(home + "/.carousel/")
-		viper.AddConfigPath("../")
-		viper.SetConfigName("config")
+	home, err := homedir.Dir()
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	viper.AddConfigPath(home + "/.carousel/")
+	viper.SetConfigName("config")
 
 	viper.AutomaticEnv() // read in environment variables that match
 

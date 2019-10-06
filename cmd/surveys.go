@@ -6,9 +6,9 @@ import (
 
 	"github.com/AlecAivazis/survey"
 
-	"github.com/walkergriggs/carousel/crypto"
 	"github.com/walkergriggs/carousel/network"
 	"github.com/walkergriggs/carousel/server"
+	"github.com/walkergriggs/carousel/ssl"
 	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
@@ -35,7 +35,7 @@ func survey_user() *user.User {
 		log.Fatal(err)
 	}
 
-	hashed_pass, err := crypto.Hash(user.Password)
+	hashed_pass, err := ssl.Hash(user.Password)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func survey_identity() network.Identity {
 	}
 
 	if ident.Password != "" {
-		hashed_pass, err := crypto.Hash(ident.Password)
+		hashed_pass, err := ssl.Hash(ident.Password)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -101,6 +101,7 @@ func survey_confirm(prompt string) bool {
 	b := false
 	confirm := &survey.Confirm{
 		Message: prompt,
+		Default: true,
 	}
 	survey.AskOne(confirm, &b)
 	return b

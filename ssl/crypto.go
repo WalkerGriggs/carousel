@@ -1,4 +1,4 @@
-package crypto
+package ssl
 
 import (
 	"golang.org/x/crypto/bcrypt"

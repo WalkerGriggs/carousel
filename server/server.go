@@ -10,6 +10,7 @@ import (
 
 	"github.com/walkergriggs/carousel/client"
 	"github.com/walkergriggs/carousel/router"
+	"github.com/walkergriggs/carousel/ssl"
 	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
@@ -17,11 +18,11 @@ import (
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	URI         uri.URI         `json:"uri"`
-	Users       []*user.User    `json:"users"`
-	SSLEnabled  bool            `json:"sslEnabled"`
-	Certificate tls.Certificate `json:",omitempty"`
-	Listener    net.Listener    `json:",omitempty"`
+	URI             uri.URI      `json:"uri"`
+	Users           []*user.User `json:"users"`
+	SSLEnabled      bool         `json:"sslEnabled"`
+	CertificatePath string       `json:"certificatePath"`
+	Listener        net.Listener `json:",omitempty"`
 }
 
 // Serve attaches a tcp listener to the specificed URI, and starts the main
@@ -51,12 +52,12 @@ func (s Server) listener() (net.Listener, error) {
 		return net.Listen("tcp", s.URI.String())
 	}
 
-	crt, err := tls.LoadX509KeyPair("carousel.crt", "carousel.key")
+	cert, err := ssl.LoadPem(s.CertificatePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	config := &tls.Config{Certificates: []tls.Certificate{crt}}
+	config := &tls.Config{Certificates: []tls.Certificate{*cert}}
 	return tls.Listen("tcp", fmt.Sprintf(":%d", s.URI.Port), config)
 }
 
