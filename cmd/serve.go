@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	_ "fmt"
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
