@@ -1,0 +1,31 @@
+[[constraint]]
+  name = "github.com/AlecAivazis/survey"
+  version = "1.8.7"
+
+[[constraint]]
+  name = "github.com/go-ozzo/ozzo-validation"
+  version = "3.6.0"
+
+[[constraint]]
+  name = "github.com/mitchellh/go-homedir"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.5"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.4.0"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+
+[[constraint]]
+  branch = "v2"
+  name = "gopkg.in/sorcix/irc.v2"
+
+[prune]
+  go-tests = true
+  unused-packages = true
