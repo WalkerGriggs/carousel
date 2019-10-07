@@ -8,7 +8,7 @@ import (
 // not an exhaustive liste of all URI components, and will be extended in future
 // implementations.
 type URI struct {
-	Host string `json:"hostname"`
+	Host string `json:"host"`
 	Port int    `json:"port"`
 }
 
