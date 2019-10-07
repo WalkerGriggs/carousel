@@ -3,11 +3,11 @@ package cmd
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 	"sync"
 
 	homedir "github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/walkergriggs/carousel/crypto/ssl"

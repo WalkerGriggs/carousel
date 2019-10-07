@@ -1,6 +1,7 @@
 package network
 
 import (
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/uri"
@@ -41,6 +42,14 @@ func (n Network) Send(msg *irc.Message) error {
 
 func (n Network) Receive() (*irc.Message, error) {
 	return n.Connection.Decode()
+}
+
+func (n Network) LogWithFields() *log.Entry {
+	return log.WithFields(log.Fields{
+		"Network":  n.Name,
+		"Host":     n.URI.String(),
+		"Nickname": n.Ident.Nickname,
+	})
 }
 
 func (n Network) BatchSend(messages []*irc.Message) error {

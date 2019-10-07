@@ -3,9 +3,9 @@ package server
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net"
 
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/client"
@@ -42,7 +42,7 @@ func (s Server) Serve() {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 
 		go s.accept(conn)
@@ -72,7 +72,7 @@ func (s Server) accept(conn net.Conn) {
 	// Authorize the user and short circuit if authorization fails
 	u, err := s.authorizeConnection(conn)
 	if err != nil {
-		return
+		log.Warn(err)
 	}
 
 	// Start listening over the local connection.
@@ -113,8 +113,14 @@ func (s Server) authorizeConnection(conn net.Conn) (*user.User, error) {
 			Params:  []string{"irc.carousel.in", ident.Nickname, "Password incorrect"},
 		})
 
-		return nil, fmt.Errorf("Authentication for user %s failed.", ident.Username)
+		return u, fmt.Errorf("Authentication for user %s failed.", ident.Username)
 	}
+
+	// Log authenticated connections
+	log.WithFields(log.Fields{
+		"User":           u.Username,
+		"Remote Address": conn.RemoteAddr().String(),
+	}).Debug("User connection accepted and authorized.")
 
 	// If the User exists _and_ they have succesfully authorized, associate the
 	// Client, and return the user.
