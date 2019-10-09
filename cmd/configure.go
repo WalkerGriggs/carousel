@@ -9,7 +9,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
-	"github.com/walkergriggs/carousel/ssl"
+	"github.com/walkergriggs/carousel/crypto/ssl"
 )
 
 // menuCmd represents the menu command

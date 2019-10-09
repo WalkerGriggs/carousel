@@ -3,7 +3,7 @@ package user
 import (
 	"github.com/walkergriggs/carousel/network"
 	"github.com/walkergriggs/carousel/router"
-	"github.com/walkergriggs/carousel/ssl"
+	"github.com/walkergriggs/carousel/crypto/phash"
 )
 
 // User represents the individual Users's account and network config. Currently,
@@ -20,5 +20,5 @@ type User struct {
 // config. The user's password isn't stored in plaintext (for very obvious
 // reasons, so we have to hash and salt the supplied password before comparing)
 func (u User) Authorized(ident network.Identity) bool {
-	return ssl.HashesMatch(u.Password, ident.Password)
+	return phash.HashesMatch(u.Password, ident.Password)
 }

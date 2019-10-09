@@ -9,7 +9,7 @@ import (
 
 	"github.com/walkergriggs/carousel/client"
 	"github.com/walkergriggs/carousel/router"
-	"github.com/walkergriggs/carousel/ssl"
+	"github.com/walkergriggs/carousel/crypto/ssl"
 	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
