@@ -73,6 +73,7 @@ func (s Server) accept(conn net.Conn) {
 	u, err := s.authorizeConnection(conn)
 	if err != nil {
 		log.Warn(err)
+		return
 	}
 
 	// Start listening over the local connection.
@@ -113,7 +114,7 @@ func (s Server) authorizeConnection(conn net.Conn) (*user.User, error) {
 			Params:  []string{"irc.carousel.in", ident.Nickname, "Password incorrect"},
 		})
 
-		return u, fmt.Errorf("Authentication for user %s failed.", ident.Username)
+		return nil, fmt.Errorf("Authentication for user %s failed.", ident.Username)
 	}
 
 	// Log authenticated connections
