@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -24,12 +25,19 @@ var configCmd = &cobra.Command{
 				log.Fatal(err)
 			}
 
+			// Wait for certificate generation to finish before returning
+			var wg sync.WaitGroup
+			wg.Add(1)
+
 			// Survey the user for their configuration settings
 			server := survey_server()
 			server.CertificatePath = config_dir + "carousel.pem"
 
 			// Generate a new SSL PEM file in the background
-			go ssl.NewPem(server.CertificatePath)
+			go func(certificatePath string) {
+				ssl.NewPem(certificatePath)
+				wg.Done()
+			}(server.CertificatePath)
 
 			js, err := json.MarshalIndent(server, "", "    ")
 			if err != nil {
@@ -39,6 +47,8 @@ var configCmd = &cobra.Command{
 			if err := ioutil.WriteFile(config_dir+"/config.json", js, 0644); err != nil {
 				log.Fatal(err)
 			}
+
+			wg.Wait()
 		}
 	},
 }

@@ -6,11 +6,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"io"
 	"log"
 	"math/big"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -33,7 +31,7 @@ func writePem(path string, buf *bytes.Buffer) error {
 	}
 	defer file.Close()
 
-	_, err = io.WriteString(file, strings.TrimSpace(buf.String()))
+	_, err = file.Write(buf.Bytes())
 	return err
 }
 
