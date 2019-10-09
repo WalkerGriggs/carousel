@@ -18,7 +18,7 @@ var configCmd = &cobra.Command{
 	Short: "Configure Carousel",
 	Long:  "Configure Carousel",
 	Run: func(cmd *cobra.Command, args []string) {
-		if survey_confirm("This command will overwrite any existing config. Continue?") {
+		if survey_confirm("This command will overwrite any existing config or ssl cert. Continue?") {
 			config_dir, err := config_dir()
 			if err != nil {
 				log.Fatal(err)
