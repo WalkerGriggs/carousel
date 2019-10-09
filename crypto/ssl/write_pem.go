@@ -15,7 +15,7 @@ import (
 )
 
 func NewPem(path string) {
-	pem, err := generatePem(4096)
+	pem, err := generatePem(KEY_LEN)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func generateX509Cert(key *rsa.PrivateKey) ([]byte, error) {
 		SerialNumber: big.NewInt(1),
 
 		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(time.Hour * 24 * 180),
+		NotAfter:  time.Now().Add(EXPIRY),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
