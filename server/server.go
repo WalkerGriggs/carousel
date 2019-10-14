@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 
@@ -36,6 +37,8 @@ func (s Server) Serve() {
 
 	defer l.Close()
 
+	s.loadUsers()
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -66,46 +69,67 @@ func (s Server) listener() (net.Listener, error) {
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
 func (s Server) accept(conn net.Conn) {
+	// Authorize the user and short circuit if authorization fails
+	u, err := s.authorizeConnection(conn)
+	if err != nil {
+		return
+	}
 
+	// Start listening over the local connection.
+	go u.Router.Local()
+
+	// Connect and begin listening to the netowkr if not already connected. This
+	// should only happen the first time the User connects, the Server should
+	// remain connected even after the Client disconnects.
+	if u.Router.Network.Connection == nil {
+		go u.Router.Wide()
+	}
+
+	// Relay necessary connection replies to the user.
+	u.Router.LocalReply()
+}
+
+// authorizeConnection decodes identity information from client connection and
+// authenticates ident against user. If the user exists and authorization is
+// successful, authorizeConnection returns the user.  Otherwise,
+// authorizeConnection returns an error.
+func (s Server) authorizeConnection(conn net.Conn) (*user.User, error) {
 	// Get identity information from user. This identity information is used to
 	// authenticate with the server -- not the network.
 	c := client.NewClient(conn)
 	ident := c.DecodeIdent()
 
-	// Get the user the connecting client is authenticating against.
+	// Ensure the User exists.
 	u := s.GetUser(ident.Username)
+	if u == nil {
+		return nil, fmt.Errorf("User %s not found", ident.Username)
+	}
 
-	// If the authentication fails, send them err 464 and short circuit
+	// Ensure the User successfully authorized. If authorization fails, send the
+	// client Error 464.
 	if !u.Authorized(ident) {
 		c.Send(&irc.Message{
 			Command: irc.ERR_PASSWDMISMATCH,
 			Params:  []string{"irc.carousel.in", ident.Nickname, "Password incorrect"},
 		})
 
-		return
+		return nil, fmt.Errorf("Authentication for user %s failed.", ident.Username)
 	}
 
-	if u.Router == nil {
-		u.Router = router.NewRouter(nil, u.Network)
-	}
-
-	// Attach the Client connection to the User's Router
+	// If the User exists _and_ they have succesfully authorized, associate the
+	// Client, and return the user.
 	u.Router.Client = c
-	go u.Router.Local()
+	return u, nil
+}
 
-	// Connect to the network if not already connected. This should only happen
-	// the first time the User connects, the Server should remain connected even
-	// after the Client disconnects.
-	if u.Router.Network.Connection == nil {
-		err := u.Router.Network.Connect()
-		if err != nil {
-			log.Fatal(err)
+// LoadUsers performs verious pre-flight checks and operations on all Users
+// before the Server begins accepting connections.
+func (s Server) loadUsers() {
+	for _, u := range s.Users {
+		if u.Router == nil {
+			u.Router = router.NewRouter(nil, u.Network)
 		}
-
-		go u.Router.Wide()
 	}
-
-	u.Router.LocalReply()
 }
 
 // getUser searches the server's users and retrieves the user matching the given
