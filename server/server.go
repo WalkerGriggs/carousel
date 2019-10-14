@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/walkergriggs/carousel/client"
 	"github.com/walkergriggs/carousel/router"
+	"github.com/walkergriggs/carousel/crypto/ssl"
 	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
@@ -16,9 +18,11 @@ import (
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	URI      uri.URI      `json:"uri"`
-	Users    []*user.User `json:"users"`
-	Listener net.Listener `json:",omitempty"`
+	URI             uri.URI      `json:"uri"`
+	Users           []*user.User `json:"users"`
+	SSLEnabled      bool         `json:"sslEnabled"`
+	CertificatePath string       `json:"certificatePath"`
+	Listener        net.Listener `json:",omitempty"`
 }
 
 // Serve attaches a tcp listener to the specificed URI, and starts the main
@@ -26,7 +30,7 @@ type Server struct {
 // only return if the TCP listener closes or errors (even if there are no active
 // connections).
 func (s Server) Serve() {
-	l, err := net.Listen("tcp", s.URI.String())
+	l, err := s.listener()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,6 +47,20 @@ func (s Server) Serve() {
 
 		go s.accept(conn)
 	}
+}
+
+func (s Server) listener() (net.Listener, error) {
+	if !s.SSLEnabled {
+		return net.Listen("tcp", s.URI.String())
+	}
+
+	cert, err := ssl.LoadPem(s.CertificatePath)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &tls.Config{Certificates: []tls.Certificate{*cert}}
+	return tls.Listen("tcp", s.URI.String(), config)
 }
 
 // Accept establishes a new connection with the accepted TCP client, and spawns

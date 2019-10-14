@@ -6,35 +6,36 @@ import (
 
 	"github.com/AlecAivazis/survey"
 
-	"github.com/walkergriggs/carousel/crypto"
 	"github.com/walkergriggs/carousel/network"
 	"github.com/walkergriggs/carousel/server"
+	"github.com/walkergriggs/carousel/crypto/phash"
 	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
 
 func survey_server() server.Server {
+	var server server.Server
+
 	fmt.Println("Lets start with Carousel's address.")
-	uri := survey_uri()
+	server.URI = survey_uri()
+
+	if err := survey.Ask(server_questions, &server); err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("Now, we need to set up an admin user.")
-	admin := survey_user()
-
-	server := server.Server{
-		Users: []*user.User{&admin},
-		URI:   uri,
-	}
+	server.Users = []*user.User{survey_user()}
 
 	return server
 }
 
-func survey_user() user.User {
+func survey_user() *user.User {
 	var user user.User
 	if err := survey.Ask(user_questions, &user); err != nil {
 		log.Fatal(err)
 	}
 
-	hashed_pass, err := crypto.Hash(user.Password)
+	hashed_pass, err := phash.Hash(user.Password)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,7 +47,7 @@ func survey_user() user.User {
 		user.Network = &net
 	}
 
-	return user
+	return &user
 }
 
 func survey_network() network.Network {
@@ -81,7 +82,7 @@ func survey_identity() network.Identity {
 	}
 
 	if ident.Password != "" {
-		hashed_pass, err := crypto.Hash(ident.Password)
+		hashed_pass, err := phash.Hash(ident.Password)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -100,6 +101,7 @@ func survey_confirm(prompt string) bool {
 	b := false
 	confirm := &survey.Confirm{
 		Message: prompt,
+		Default: true,
 	}
 	survey.AskOne(confirm, &b)
 	return b

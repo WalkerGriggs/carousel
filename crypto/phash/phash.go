@@ -1,4 +1,4 @@
-package crypto
+package phash
 
 import (
 	"golang.org/x/crypto/bcrypt"

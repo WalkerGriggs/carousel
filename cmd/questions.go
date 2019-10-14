@@ -4,6 +4,17 @@ import (
 	"github.com/AlecAivazis/survey"
 )
 
+var server_questions = []*survey.Question{
+	{
+		Name: "sslEnabled",
+		Prompt: &survey.Confirm{
+			Message: "Enable SSL?",
+			Default: true,
+		},
+		Validate: survey.Required,
+	},
+}
+
 var ident_questions = []*survey.Question{
 	{
 		Name:     "nickname",
