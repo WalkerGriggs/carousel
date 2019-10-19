@@ -6,22 +6,18 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"log"
 	"math/big"
 	"os"
 	"time"
 )
 
-func NewPem(path string) {
+func NewPem(path string) error {
 	pem, err := generatePem(KEY_LEN)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	err = writePem(path, pem)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return writePem(path, pem)
 }
 
 func writePem(path string, buf *bytes.Buffer) error {
