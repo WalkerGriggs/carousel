@@ -1,8 +1,7 @@
 package router
 
 import (
-	"log"
-
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/client"
@@ -12,6 +11,7 @@ import (
 type Connection interface {
 	Send(msg *irc.Message) error
 	Receive() (*irc.Message, error)
+	LogWithFields() *log.Entry
 }
 
 // Router maintains the two channels over which messages are passed between the
@@ -36,22 +36,24 @@ func NewRouter(client *client.Client, network *network.Network) *Router {
 //   - the reader throws an error
 //   - the encoder throws an error
 //   - the client disconnects
-func (r *Router) Local() error {
+func (r *Router) Local() {
 	for {
 		msg, err := r.Client.Receive()
 		if err != nil {
-			return err
+			r.Client.LogWithFields().Error(err)
+			continue
 		}
 
 		if msg != nil {
 			switch msg.Command {
 			case "QUIT":
+				r.Client.LogWithFields().Debug("Client disconnected")
 				r.Client = nil
-				return nil
+				return
 
 			default:
 				if err := r.Network.Send(msg); err != nil {
-					return err
+					r.Client.LogWithFields().Error(err)
 				}
 			}
 		}
@@ -62,19 +64,21 @@ func (r *Router) Local() error {
 // user. In it's current state, this blocking process should exit if...
 //   - the decoder throws an error
 //   - the writer throws an error
-func (r *Router) Wide() error {
+func (r *Router) Wide() {
 	// Connect to network if not already connected. This should only happen the
 	// the first time the User conncets, as this Wide routine should only exit if
 	// it encounters a Connection issue.
 	err := r.Network.Connect()
 	if err != nil {
-		return err
+		r.Network.LogWithFields().Error(err)
+		return
 	}
 
 	for {
 		msg, err := r.Network.Receive()
 		if err != nil {
-			return nil
+			r.Network.LogWithFields().Error(err)
+			continue
 		}
 
 		switch msg.Command {
@@ -86,7 +90,7 @@ func (r *Router) Wide() error {
 		}
 
 		if err := r.Client.Send(msg); err != nil {
-			return err
+			r.Network.LogWithFields().Error(err)
 		}
 	}
 }
@@ -97,7 +101,7 @@ func (r *Router) Wide() error {
 func (r Router) LocalReply() {
 	for _, msg := range r.ClientReplies {
 		if _, err := r.Client.Connection.Write([]byte(msg.String() + "\n")); err != nil {
-			log.Fatal(err)
+			r.Client.LogWithFields().Error(err)
 		}
 	}
 }

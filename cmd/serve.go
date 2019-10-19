@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-	"log"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -31,7 +29,7 @@ func serve() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Listening on ", c.URI.String())
+	log.Info("Listening on ", c.URI.String())
 
 	c.Serve()
 }

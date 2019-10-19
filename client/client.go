@@ -2,10 +2,10 @@ package client
 
 import (
 	"bufio"
-	"log"
 	"net"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/network"
@@ -42,8 +42,13 @@ func (c Client) Receive() (*irc.Message, error) {
 	}
 
 	msg = strings.TrimSpace(string(msg))
-
 	return irc.ParseMessage(msg), nil
+}
+
+func (c Client) LogWithFields() *log.Entry {
+	return log.WithFields(log.Fields{
+		"RemoteAddress": c.Connection.RemoteAddr().String(),
+	})
 }
 
 // decodeIdent receives identification commands from an RFC compliant IRC
@@ -63,11 +68,11 @@ func (c Client) DecodeIdent() network.Identity {
 	for {
 		message, err := c.Decoder.Decode()
 		if err != nil {
-			log.Fatal(err)
+			c.LogWithFields().Error(err)
+			continue
 		}
 
 		messages[strings.ToUpper(message.Command)] = message
-
 		if containsAll(messages, required_commands) {
 			break
 		}

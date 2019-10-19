@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/AlecAivazis/survey"
+	log "github.com/sirupsen/logrus"
 
+	"github.com/walkergriggs/carousel/crypto/phash"
 	"github.com/walkergriggs/carousel/network"
 	"github.com/walkergriggs/carousel/server"
-	"github.com/walkergriggs/carousel/crypto/phash"
 	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
