@@ -1,16 +1,15 @@
 package server
 
 import (
-	"crypto/tls"
 	"fmt"
 	"net"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/client"
 	"github.com/walkergriggs/carousel/router"
-	"github.com/walkergriggs/carousel/crypto/ssl"
 	"github.com/walkergriggs/carousel/uri"
 	"github.com/walkergriggs/carousel/user"
 )
@@ -49,83 +48,78 @@ func (s Server) Serve() {
 	}
 }
 
-func (s Server) listener() (net.Listener, error) {
-	if !s.SSLEnabled {
-		return net.Listen("tcp", s.URI.String())
-	}
-
-	cert, err := ssl.LoadPem(s.CertificatePath)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &tls.Config{Certificates: []tls.Certificate{*cert}}
-	return tls.Listen("tcp", s.URI.String(), config)
-}
-
 // Accept establishes a new connection with the accepted TCP client, and spawns
 // the concurrent processess responsible to message passing between the IRC
 // network and user. Each accepted connection has it's own router and associated
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
 func (s Server) accept(conn net.Conn) {
-	// Authorize the user and short circuit if authorization fails
-	u, err := s.authorizeConnection(conn)
+	c := client.NewClient(conn)
+	go c.Local()
+
+	// authorize is a blocking function, and will not return until the user has
+	// been authroized or (todo) timeout reached
+	u, err := s.authorize(c)
 	if err != nil {
-		log.Warn(err)
+		log.WithError(err).Error("Client authorization failed.")
 		return
 	}
 
-	// Start listening over the local connection.
-	go u.Router.Local()
+	log.Debug(u)
+	u.Router.Client = c
 
-	// Connect and begin listening to the netowkr if not already connected. This
-	// should only happen the first time the User connects, the Server should
-	// remain connected even after the Client disconnects.
 	if u.Router.Network.Connection == nil {
-		go u.Router.Wide()
+		go u.Router.Network.Wide()
 	}
 
-	// Relay necessary connection replies to the user.
+	go u.Router.Route()
+
 	u.Router.LocalReply()
+}
+
+func (s Server) authorize(c *client.Client) (*user.User, error) {
+	for {
+		if c.Ident.Username == "" {
+			continue
+		}
+
+		u, err := s.authorizeClient(c)
+		if err != nil {
+			log.Error(err)
+		}
+
+		if u != nil {
+			return u, nil
+		}
+
+		// todo: exponential delay?
+		// todo: timeout error?
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 // authorizeConnection decodes identity information from client connection and
 // authenticates ident against user. If the user exists and authorization is
 // successful, authorizeConnection returns the user.  Otherwise,
 // authorizeConnection returns an error.
-func (s Server) authorizeConnection(conn net.Conn) (*user.User, error) {
-	// Get identity information from user. This identity information is used to
-	// authenticate with the server -- not the network.
-	c := client.NewClient(conn)
-	ident := c.DecodeIdent()
-
+func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
 	// Ensure the User exists.
-	u := s.GetUser(ident.Username)
+	u := s.GetUser(c.Ident.Username)
 	if u == nil {
-		return nil, fmt.Errorf("User %s not found", ident.Username)
+		return nil, fmt.Errorf("User %s not found", c.Ident.Username)
 	}
 
 	// Ensure the User successfully authorized. If authorization fails, send the
 	// client Error 464.
-	if !u.Authorized(ident) {
+	if !u.Authorized(*c.Ident) {
 		c.Send(&irc.Message{
 			Command: irc.ERR_PASSWDMISMATCH,
-			Params:  []string{"irc.carousel.in", ident.Nickname, "Password incorrect"},
+			Params:  []string{"irc.carousel.in", c.Ident.Nickname, "Password incorrect"},
 		})
 
-		return nil, fmt.Errorf("Authentication for user %s failed.", ident.Username)
+		return nil, fmt.Errorf("Authentication for user %s failed.", c.Ident.Username)
 	}
 
-	// Log authenticated connections
-	log.WithFields(log.Fields{
-		"User":           u.Username,
-		"Remote Address": conn.RemoteAddr().String(),
-	}).Debug("User connection accepted and authorized.")
-
-	// If the User exists _and_ they have succesfully authorized, associate the
-	// Client, and return the user.
-	u.Router.Client = c
 	return u, nil
 }
 
@@ -135,6 +129,7 @@ func (s Server) loadUsers() {
 	for _, u := range s.Users {
 		if u.Router == nil {
 			u.Router = router.NewRouter(nil, u.Network)
+			u.Router.Network.Buffer = make(chan *irc.Message)
 		}
 	}
 }

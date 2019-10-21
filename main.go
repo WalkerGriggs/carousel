@@ -8,10 +8,12 @@ import (
 )
 
 func init() {
-	// Output to stdout instead of the default stderr
-	// Can be any io.Writer, see below for File example
-	log.SetOutput(os.Stdout)
+	formatter := &log.TextFormatter{
+		FullTimestamp: true,
+	}
 
+	log.SetOutput(os.Stdout)
+	log.SetFormatter(formatter)
 	log.SetLevel(log.DebugLevel)
 }
 

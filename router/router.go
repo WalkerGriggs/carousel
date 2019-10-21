@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
 
@@ -19,9 +21,8 @@ type Connection interface {
 // traffic between the User and Router, and the Wide channel handles all traffic
 // between the Router and Network
 type Router struct {
-	Client        *client.Client   `json:",omitempty"`
-	Network       *network.Network `json:",omitempty"`
-	ClientReplies []*irc.Message   `json:",omitempty"`
+	Client  *client.Client   `json:",omitempty"`
+	Network *network.Network `json:",omitempty"`
 }
 
 func NewRouter(client *client.Client, network *network.Network) *Router {
@@ -31,66 +32,58 @@ func NewRouter(client *client.Client, network *network.Network) *Router {
 	}
 }
 
-// Local reads, sanitizes, and forwards all messages sent from the User to the
-// network. In its current state, this blocking process should exit if...
-//   - the reader throws an error
-//   - the encoder throws an error
-//   - the client disconnects
-func (r *Router) Local() {
+func (r Router) Route() {
+	timeout := make(chan bool, 1)
+	msgs := make(chan *irc.Message)
+	go r.healthcheck(msgs, timeout)
+
 	for {
-		msg, err := r.Client.Receive()
-		if err != nil {
-			r.Client.LogWithFields().Error(err)
-			continue
-		}
+		select {
+		case <-timeout:
+			r.Client.Connection.Close()
+			return
 
-		if msg != nil {
-			switch msg.Command {
-			case "QUIT":
-				r.Client.LogWithFields().Debug("Client disconnected")
-				r.Client = nil
-				return
+		case msg := <-r.Client.Buffer:
+			log.Debug(msg)
 
-			default:
-				if err := r.Network.Send(msg); err != nil {
-					r.Client.LogWithFields().Error(err)
-				}
+			if msg.Command == "PONG" {
+				msgs <- msg
+			}
+
+			if err := r.Network.Send(msg); err != nil {
+				log.WithError(err).Error("Failed to send")
+			}
+
+		case msg := <-r.Network.Buffer:
+			if err := r.Client.Send(msg); err != nil {
+				log.WithError(err).Error("Failed to send")
 			}
 		}
 	}
 }
 
-// Wide reads, parses, and forwards all messages send from the network to the
-// user. In it's current state, this blocking process should exit if...
-//   - the decoder throws an error
-//   - the writer throws an error
-func (r *Router) Wide() {
-	// Connect to network if not already connected. This should only happen the
-	// the first time the User conncets, as this Wide routine should only exit if
-	// it encounters a Connection issue.
-	err := r.Network.Connect()
-	if err != nil {
-		r.Network.LogWithFields().Error(err)
-		return
-	}
+func (r Router) healthcheck(msgs <-chan *irc.Message, exit chan<- bool) {
+	for range time.Tick(30 * time.Second) {
+		timeout := make(chan bool)
 
-	for {
-		msg, err := r.Network.Receive()
-		if err != nil {
-			r.Network.LogWithFields().Error(err)
+		r.Client.Ping(r.Network.Ident.Nickname)
+
+		go func(timeout chan<- bool) {
+			time.Sleep(5 * time.Second)
+			timeout <- true
+		}(timeout)
+
+		select {
+		case <-msgs:
 			continue
-		}
 
-		switch msg.Command {
-		case "PING":
-			r.Network.Pong(msg)
+		case <-timeout:
+			log.WithFields(log.Fields{
+				"Nickname": r.Network.Ident.Nickname,
+			}).Warn("Failed to receive PONG. Disconnecting client")
 
-		case "001", "002", "003", "004", "005":
-			r.ClientReplies = append(r.ClientReplies, msg)
-		}
-
-		if err := r.Client.Send(msg); err != nil {
-			r.Network.LogWithFields().Error(err)
+			exit <- true
+			return
 		}
 	}
 }
@@ -99,9 +92,9 @@ func (r *Router) Wide() {
 // BOUNCE) initially sent by the network to the user.
 // See RFC 2813 § 5.2.1
 func (r Router) LocalReply() {
-	for _, msg := range r.ClientReplies {
-		if _, err := r.Client.Connection.Write([]byte(msg.String() + "\n")); err != nil {
-			r.Client.LogWithFields().Error(err)
+	for _, msg := range r.Network.ClientReplies {
+		if err := r.Client.Send(msg); err != nil {
+			log.WithError(err).Error("Needs better logging")
 		}
 	}
 }

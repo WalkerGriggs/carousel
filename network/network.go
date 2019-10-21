@@ -1,7 +1,6 @@
 package network
 
 import (
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/uri"
@@ -14,6 +13,9 @@ type Network struct {
 	Name       string    `json:"name"`
 	URI        uri.URI   `json:"uri"`
 	Ident      Identity  `json:"ident"`
+
+	ClientReplies []*irc.Message    `json:",omitempty"`
+	Buffer        chan *irc.Message `json:",omitempty"`
 }
 
 // Identity represnts the necessary information to authenticate with a Network.
@@ -30,41 +32,42 @@ func (n *Network) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	n.Connection = conn
 	n.Identify()
 
 	return nil
 }
 
-func (n Network) Send(msg *irc.Message) error {
-	return n.Connection.Encode(msg)
-}
-
-func (n Network) Receive() (*irc.Message, error) {
-	return n.Connection.Decode()
-}
-
-func (n Network) LogWithFields() *log.Entry {
-	return log.WithFields(log.Fields{
-		"Network":  n.Name,
-		"Host":     n.URI.String(),
-		"Nickname": n.Ident.Nickname,
-	})
-}
-
-func (n Network) BatchSend(messages []*irc.Message) error {
-	for _, msg := range messages {
-		if err := n.Send(msg); err != nil {
-			return err
-		}
+func (n *Network) Wide() {
+	err := n.Connect()
+	if err != nil {
+		n.LogEntry().Error(err)
+		return
 	}
 
-	return nil
+	for {
+		msg, err := n.Receive()
+		if err != nil {
+			n.LogEntry().Error(err)
+			continue
+		}
+
+		switch msg.Command {
+		case "PING":
+			n.Pong(msg)
+
+		case "001", "002", "003", "004", "005":
+			n.ClientReplies = append(n.ClientReplies, msg)
+		}
+
+		n.Buffer <- msg
+	}
 }
 
 // Pong responds to the network's Ping with a Pong command.
 // See RFC 2812 § 3.7.2
-func (n Network) Pong(msg *irc.Message) {
+func (n *Network) Pong(msg *irc.Message) {
 	n.Send(&irc.Message{
 		Command: "PONG",
 		Params:  msg.Params,
@@ -73,7 +76,7 @@ func (n Network) Pong(msg *irc.Message) {
 
 // Identify handles connection registration for each user.
 // Again, see RFC 2812 § 3.1
-func (n Network) Identify() {
+func (n *Network) Identify() {
 	var messages []*irc.Message
 
 	if n.Ident.Password != "" {
