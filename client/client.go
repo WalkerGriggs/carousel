@@ -37,7 +37,7 @@ func (c *Client) Local() {
 	for {
 		msg, err := c.Receive()
 		if err != nil {
-			c.LogEntry().WithError(err).Error("Unable to receive message.")
+			c.LogEntry().WithError(err).Error("Failed to receive message.")
 			return
 		}
 

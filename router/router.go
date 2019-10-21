@@ -49,12 +49,12 @@ func (r Router) Route() {
 			}
 
 			if err := r.Network.Send(msg); err != nil {
-				log.WithError(err).Error("Failed to send")
+				r.Network.LogEntry().WithErr(err).Error("Failed to send to network.")
 			}
 
 		case msg := <-r.Network.Buffer:
 			if err := r.Client.Send(msg); err != nil {
-				log.WithError(err).Error("Failed to send")
+				r.Client.LogEntry().WithErr(err).Error("Failed to send to client.")
 			}
 		}
 	}

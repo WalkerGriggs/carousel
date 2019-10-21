@@ -55,17 +55,18 @@ func (s Server) Serve() {
 // authenticate.
 func (s Server) accept(conn net.Conn) {
 	c := client.NewClient(conn)
+	c.LogEntry().Debug("Accepting client connection.")
+
 	go c.Local()
 
 	// authorize is a blocking function, and will not return until the user has
 	// been authroized or (todo) timeout reached
 	u, err := s.authorize(c)
 	if err != nil {
-		log.WithError(err).Error("Client authorization failed.")
+		c.LogEntry().WithError(err).Error("Failed to authorize client.")
 		return
 	}
 
-	log.Debug(u)
 	u.Router.Client = c
 
 	if u.Router.Network.Connection == nil {
@@ -73,7 +74,6 @@ func (s Server) accept(conn net.Conn) {
 	}
 
 	go u.Router.Route()
-
 	u.Router.LocalReply()
 }
 
@@ -85,10 +85,11 @@ func (s Server) authorize(c *client.Client) (*user.User, error) {
 
 		u, err := s.authorizeClient(c)
 		if err != nil {
-			log.Error(err)
+			c.LogEntry().WithError(err).Error("Failed to authenticate with user %s. Retrying.\n", c.Ident.username)
 		}
 
 		if u != nil {
+			c.LogEntry().Infof("Client authenticated with user %s.\n", u.Username)
 			return u, nil
 		}
 
@@ -147,6 +148,5 @@ func GetUser(users []*user.User, username string) *user.User {
 			return user
 		}
 	}
-
 	return nil
 }

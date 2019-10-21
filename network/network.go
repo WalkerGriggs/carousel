@@ -42,15 +42,15 @@ func (n *Network) Connect() error {
 func (n *Network) Wide() {
 	err := n.Connect()
 	if err != nil {
-		n.LogEntry().Error(err)
+		n.LogEntry().WithError(err).Error("Failed to connect to network.")
 		return
 	}
 
 	for {
 		msg, err := n.Receive()
 		if err != nil {
-			n.LogEntry().Error(err)
-			continue
+			n.LogEntry().WithError(err).Error("Failed to receive message.")
+			return
 		}
 
 		switch msg.Command {
