@@ -20,3 +20,12 @@ func (c Client) Receive() (*irc.Message, error) {
 	msg = strings.TrimSpace(string(msg))
 	return irc.ParseMessage(msg), nil
 }
+
+func (c Client) BatchSend(messages []*irc.Message) error {
+	for _, msg := range messages {
+		if err := c.Send(msg); err != nil {
+			return err
+		}
+	}
+	return nil
+}

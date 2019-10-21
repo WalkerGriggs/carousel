@@ -44,8 +44,6 @@ func (r Router) Route() {
 			return
 
 		case msg := <-r.Client.Buffer:
-			log.Debug(msg)
-
 			if msg.Command == "PONG" {
 				msgs <- msg
 			}
@@ -92,9 +90,7 @@ func (r Router) healthcheck(msgs <-chan *irc.Message, exit chan<- bool) {
 // BOUNCE) initially sent by the network to the user.
 // See RFC 2813 § 5.2.1
 func (r Router) LocalReply() {
-	for _, msg := range r.Network.ClientReplies {
-		if err := r.Client.Send(msg); err != nil {
-			log.WithError(err).Error("Needs better logging")
-		}
+	if err := r.Client.BatchSend(r.Network.ClientReplies); err != nil {
+		r.Client.LogEntry().WithError(err).Error("Failed to send to client.")
 	}
 }
