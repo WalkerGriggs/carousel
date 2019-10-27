@@ -6,13 +6,13 @@ import (
 	"gopkg.in/sorcix/irc.v2"
 )
 
-func (c Client) Send(msg *irc.Message) error {
+func (c *Client) Send(msg *irc.Message) error {
 	_, err := c.Connection.Write([]byte(msg.String() + "\n"))
 	return err
 }
 
-func (c Client) Receive() (*irc.Message, error) {
-	msg, err := c.reader.ReadString('\n')
+func (c *Client) Receive() (*irc.Message, error) {
+	msg, err := c.Reader.ReadString('\n')
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func (c Client) Receive() (*irc.Message, error) {
 	return irc.ParseMessage(msg), nil
 }
 
-func (c Client) BatchSend(messages []*irc.Message) error {
+func (c *Client) BatchSend(messages []*irc.Message) error {
 	for _, msg := range messages {
 		if err := c.Send(msg); err != nil {
 			return err

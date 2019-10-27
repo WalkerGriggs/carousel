@@ -6,11 +6,12 @@ import (
 	"github.com/AlecAivazis/survey"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/walkergriggs/carousel/crypto/phash"
-	"github.com/walkergriggs/carousel/network"
-	"github.com/walkergriggs/carousel/server"
-	"github.com/walkergriggs/carousel/uri"
-	"github.com/walkergriggs/carousel/user"
+	"github.com/walkergriggs/carousel/pkg/crypto/phash"
+	"github.com/walkergriggs/carousel/pkg/identity"
+	"github.com/walkergriggs/carousel/pkg/network"
+	"github.com/walkergriggs/carousel/pkg/server"
+	"github.com/walkergriggs/carousel/pkg/uri"
+	"github.com/walkergriggs/carousel/pkg/user"
 )
 
 func survey_server() server.Server {
@@ -74,8 +75,8 @@ func survey_uri() uri.URI {
 	return uri
 }
 
-func survey_identity() network.Identity {
-	var ident network.Identity
+func survey_identity() identity.Identity {
+	var ident identity.Identity
 	err := survey.Ask(ident_questions, &ident)
 	if err != nil {
 		log.Fatal(err)

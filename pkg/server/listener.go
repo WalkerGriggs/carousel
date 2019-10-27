@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 
-	"github.com/walkergriggs/carousel/crypto/ssl"
+	"github.com/walkergriggs/carousel/pkg/crypto/ssl"
 )
 
 func (s Server) listener() (net.Listener, error) {

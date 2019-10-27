@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/walkergriggs/carousel/server"
+	"github.com/walkergriggs/carousel/pkg/server"
 )
 
 // serveCmd represents the serve command

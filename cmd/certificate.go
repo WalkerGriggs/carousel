@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/walkergriggs/carousel/crypto/ssl"
+	"github.com/walkergriggs/carousel/pkg/crypto/ssl"
 )
 
 var certificateCmd = &cobra.Command{
