@@ -51,7 +51,7 @@ func New(opts Options) (*Client, error) {
 // exit if...
 //   - the reader throws an error
 //   - the Client disconnects
-func (c *Client) Local() {
+func (c *Client) Listen() {
 	c.LogEntry().Debug("Listening over client connection.")
 
 	for {
@@ -64,15 +64,8 @@ func (c *Client) Local() {
 		// Parse and store USER, NICK, and PASS commands used by the client to
 		// authenticate with specified user. Otherwise, pass the message along.x
 		switch msg.Command {
-		case "USER":
-			c.Ident.Username = msg.Params[0]
-			c.Ident.Realname = msg.Params[3]
-
-		case "NICK":
-			c.Ident.Nickname = msg.Params[0]
-
-		case "PASS":
-			c.Ident.Password = msg.Params[0]
+		case "USER", "NICK", "PASS":
+			c.parseIdent(msg)
 
 		case "QUIT":
 			c.LogEntry().Debug("Client disconnected")
@@ -82,6 +75,22 @@ func (c *Client) Local() {
 		default:
 			c.Buffer <- msg
 		}
+	}
+}
+
+// parseIdent pulls identity parameters out of irc messages and stores them
+// in the client.
+func (c *Client) parseIdent(msg *irc.Message) {
+	switch msg.Command {
+	case "USER":
+		c.Ident.Username = msg.Params[0]
+		c.Ident.Realname = msg.Params[3]
+
+	case "NICK":
+		c.Ident.Nickname = msg.Params[0]
+
+	case "PASS":
+		c.Ident.Password = msg.Params[0]
 	}
 }
 

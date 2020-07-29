@@ -75,7 +75,7 @@ func (s Server) accept(conn net.Conn) {
 		return
 	}
 
-	go c.Local()
+	go c.Listen()
 
 	// authorize is a blocking function, and will not return until the user has
 	// been authroized or (todo) timeout reached
@@ -85,18 +85,8 @@ func (s Server) accept(conn net.Conn) {
 		return
 	}
 
-	u.Client = c
-
-	if u.Network.Buffer == nil {
-		u.Network.Buffer = make(chan *irc.Message)
-	}
-
-	if u.Network.Connection == nil {
-		go u.Network.Wide()
-	}
-
+	go u.Network.Listen()
 	go u.Route(u.Network)
-	u.LocalReply(u.Network)
 }
 
 func (s Server) authorize(c *client.Client) (*user.User, error) {
@@ -107,11 +97,14 @@ func (s Server) authorize(c *client.Client) (*user.User, error) {
 
 		u, err := s.authorizeClient(c)
 		if err != nil {
-			c.LogEntry().WithError(err).Error("Failed to authenticate with user %s. Retrying.\n", c.Ident.Username)
+			c.LogEntry().
+				WithError(err).
+				Error("Failed to authenticate with user %s. Retrying.\n", c.Ident.Username)
 		}
 
 		if u != nil {
 			c.LogEntry().Infof("Client authenticated with user %s.\n", u.Username)
+			u.Client = c
 			return u, nil
 		}
 
@@ -139,7 +132,6 @@ func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
 			Command: irc.ERR_PASSWDMISMATCH,
 			Params:  []string{"irc.carousel.in", c.Ident.Nickname, "Password incorrect"},
 		})
-
 		return nil, fmt.Errorf("Authentication for user %s failed.", c.Ident.Username)
 	}
 

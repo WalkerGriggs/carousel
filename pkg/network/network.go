@@ -37,18 +37,29 @@ func New(opts Options) (*Network, error) {
 	}, nil
 }
 
-// Wide reads, parses, and forwards all messages send from the network to the
-// user. In it's current state, this blocking process should exit if the network
-// encounters an error when receiving messages.
+// Listen attempts to connect and listen if the network isn't already connectedif network isn't already connected and  listens to ensures the network is connected and listening. If the
+// network is already connected, this function is a no-op.
 //
 // If the Network's Connection is nil when Wide is called, Wide will attempt to
 // connected the Network. If the connection fails, Wide logs an error and exits.
-func (n *Network) Wide() {
-	if err := n.connect(); err != nil {
-		n.LogEntry().WithError(err).Error("Failed to connect to network.")
-		return
-	}
+func (n *Network) Listen() {
+	if n.Connection == nil {
+		n.Buffer = make(chan *irc.Message)
 
+		err := n.connect()
+		if err != nil {
+			n.LogEntry().WithError(err).Error("Failed to connect to network.")
+			return
+		}
+
+		n.listen()
+	}
+}
+
+// listen reads, parses, and forwards all mesages sent from the network to the
+// client. in it's current state, this blocking function should exit if the
+// network encounters an error when receiving messages.
+func (n *Network) listen() {
 	for {
 		msg, err := n.Receive()
 		if err != nil {
@@ -59,9 +70,6 @@ func (n *Network) Wide() {
 		switch msg.Command {
 		case "PING":
 			n.pong(msg)
-
-		case "001", "002", "003", "004", "005":
-			n.ClientReplies = append(n.ClientReplies, msg)
 		}
 
 		n.Buffer <- msg

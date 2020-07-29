@@ -42,7 +42,7 @@ func (u *User) Route(n *network.Network) {
 	}
 }
 
-// healthcheck sends a Ping message ot the Client and waits for a response. If
+// heartbeat sends a Ping message ot the Client and waits for a response. If
 // it doesn't hear back within a few seconds, heartbeat will send an message
 // over the exit channel.
 func (u *User) heartbeat(ident identity.Identity, msgs <-chan *irc.Message, exit chan<- bool) {
@@ -72,14 +72,5 @@ func (u *User) heartbeat(ident identity.Identity, msgs <-chan *irc.Message, exit
 			exit <- true
 			return
 		}
-	}
-}
-
-// LocalReply relays the reply commands (WELCOME, YOURHOST, CREATED, MYINFO, and
-// BOUNCE) initially sent by the network to the user.
-// See RFC 2813 § 5.2.1
-func (u *User) LocalReply(n *network.Network) {
-	if err := u.Client.BatchSend(n.ClientReplies); err != nil {
-		u.Client.LogEntry().WithError(err).Error("Failed to send to client.")
 	}
 }
