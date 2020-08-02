@@ -6,6 +6,8 @@ import (
 	"os"
 	"sync"
 
+	"fmt"
+
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -43,8 +45,11 @@ var configCmd = &cobra.Command{
 				wg.Done()
 			}(server.CertificatePath)
 
+			fmt.Println(server)
+
 			js, err := json.MarshalIndent(server, "", "    ")
 			if err != nil {
+				log.Warn("Here?")
 				log.Fatal(err)
 			}
 

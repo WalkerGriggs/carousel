@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"time"
 
 	"gopkg.in/sorcix/irc.v2"
 
@@ -25,6 +26,8 @@ type Client struct {
 	Encoder *irc.Encoder  `json:",omitempty"`
 	Decoder *irc.Decoder  `json:",omitempty"`
 	Reader  *bufio.Reader `json:",omitempty"`
+
+	disconnect chan bool `json:",omitempty"`
 }
 
 // New takes in Client Options and returns a new Client object. In this case,
@@ -43,7 +46,14 @@ func New(opts Options) (*Client, error) {
 		Encoder: irc.NewEncoder(opts.Connection),
 		Decoder: irc.NewDecoder(opts.Connection),
 		Reader:  bufio.NewReader(opts.Connection),
+
+		disconnect: make(chan bool),
 	}, nil
+}
+
+func (c *Client) Listen() {
+	go c.listen()
+	go c.heartbeat()
 }
 
 // Local reads, sanitizes, and forwards all messages sent from the User directed
@@ -51,7 +61,7 @@ func New(opts Options) (*Client, error) {
 // exit if...
 //   - the reader throws an error
 //   - the Client disconnects
-func (c *Client) Listen() {
+func (c *Client) listen() {
 	c.LogEntry().Debug("Listening over client connection.")
 
 	for {
@@ -68,14 +78,32 @@ func (c *Client) Listen() {
 			c.parseIdent(msg)
 
 		case "QUIT":
-			c.LogEntry().Debug("Client disconnected")
-			c.Connection.Close()
+			c.Disconnect()
 			return
 
 		default:
 			c.Buffer <- msg
 		}
 	}
+}
+
+func (c *Client) heartbeat() {
+	c.LogEntry().Debug("Starting heartbeat for client connection.")
+
+	for range time.Tick(30 * time.Second) {
+		select {
+		case <-c.disconnect:
+			return
+		default:
+			c.Ping(c.Ident.Nickname)
+		}
+	}
+}
+
+func (c *Client) Disconnect() {
+	c.LogEntry().Debug("Client disconnected")
+	c.Connection.Close()
+	close(c.disconnect)
 }
 
 // parseIdent pulls identity parameters out of irc messages and stores them

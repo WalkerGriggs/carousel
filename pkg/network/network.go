@@ -60,6 +60,8 @@ func (n *Network) Listen() {
 // client. in it's current state, this blocking function should exit if the
 // network encounters an error when receiving messages.
 func (n *Network) listen() {
+	n.LogEntry().Debug("Listening to network.")
+
 	for {
 		msg, err := n.Receive()
 		if err != nil {

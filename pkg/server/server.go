@@ -75,7 +75,7 @@ func (s Server) accept(conn net.Conn) {
 		return
 	}
 
-	go c.Listen()
+	c.Listen()
 
 	// authorize is a blocking function, and will not return until the user has
 	// been authroized or (todo) timeout reached
@@ -86,7 +86,7 @@ func (s Server) accept(conn net.Conn) {
 	}
 
 	go u.Network.Listen()
-	go u.Route(u.Network)
+	go c.Route(u.Network)
 }
 
 func (s Server) authorize(c *client.Client) (*user.User, error) {
