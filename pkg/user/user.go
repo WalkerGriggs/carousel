@@ -20,7 +20,7 @@ type User struct {
 	Username string           `json:"username"`
 	Password string           `json:"password"`
 	Network  *network.Network `json:"network,omitempty"`
-	Client   *client.Client
+	Client   *client.Client   `json:",omitempty"`
 }
 
 func New(opts Options) (*User, error) {

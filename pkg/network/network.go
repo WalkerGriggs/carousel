@@ -53,6 +53,8 @@ func (n *Network) Listen() {
 		}
 
 		n.listen()
+	} else {
+		n.localReply()
 	}
 }
 
@@ -72,6 +74,9 @@ func (n *Network) listen() {
 		switch msg.Command {
 		case "PING":
 			n.pong(msg)
+
+		case "001", "002", "003", "004", "005":
+			n.ClientReplies = append(n.ClientReplies, msg)
 		}
 
 		n.Buffer <- msg
@@ -124,4 +129,10 @@ func (n *Network) pong(msg *irc.Message) {
 		Command: "PONG",
 		Params:  msg.Params,
 	})
+}
+
+func (n *Network) localReply() {
+	for _, msg  := range n.ClientReplies {
+		n.Buffer <- msg
+	}
 }
