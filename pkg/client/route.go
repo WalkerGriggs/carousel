@@ -9,6 +9,7 @@ import (
 // Connection. If the Client doesn' respond to the Ping or encounters an error
 // when sending to either the Client or Network, Route returns.
 func (c *Client) Route(n *network.Network) {
+	c.LogEntry().Debug("Routing messages between client and network")
 	for {
 		select {
 		case <-c.disconnect:

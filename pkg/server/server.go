@@ -85,8 +85,9 @@ func (s Server) accept(conn net.Conn) {
 		return
 	}
 
-	go u.Network.Listen()
 	go c.Route(u.Network)
+	u.Network.Listen()
+	c.AttachNetwork(u.Network)
 }
 
 func (s Server) authorize(c *client.Client) (*user.User, error) {

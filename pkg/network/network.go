@@ -3,6 +3,7 @@ package network
 import (
 	"gopkg.in/sorcix/irc.v2"
 
+	"github.com/walkergriggs/carousel/pkg/channel"
 	"github.com/walkergriggs/carousel/pkg/identity"
 	"github.com/walkergriggs/carousel/pkg/uri"
 )
@@ -16,10 +17,11 @@ type Options struct {
 // Network represents an IRC network. Each network has a URI, and, because Users
 // own the Network object, each Network stores the User's Identity as well.
 type Network struct {
-	Name   string            `json:"name"`
-	URI    uri.URI           `json:"uri"`
-	Ident  identity.Identity `json:"ident"`
-	Buffer chan *irc.Message `json:",omitempty"`
+	Name     string            `json:"name"`
+	URI      uri.URI           `json:"uri"`
+	Ident    identity.Identity `json:"ident"`
+	Buffer   chan *irc.Message `json:",omitempty"`
+	Channels []*channel.Channel `json:",omitempty"`
 
 	Connection    *irc.Conn      `json:",omitempty"`
 	ClientReplies []*irc.Message `json:",omitempty"`
@@ -44,6 +46,7 @@ func New(opts Options) (*Network, error) {
 // connected the Network. If the connection fails, Wide logs an error and exits.
 func (n *Network) Listen() {
 	if n.Connection == nil {
+		n.LogEntry().Debug("Establishing connection")
 		n.Buffer = make(chan *irc.Message)
 
 		err := n.connect()
@@ -52,7 +55,7 @@ func (n *Network) Listen() {
 			return
 		}
 
-		n.listen()
+		go n.listen()
 	} else {
 		n.localReply()
 	}
@@ -74,6 +77,10 @@ func (n *Network) listen() {
 		switch msg.Command {
 		case "PING":
 			n.pong(msg)
+			continue
+
+		case "JOIN":
+			n.join(msg)
 
 		case "001", "002", "003", "004", "005":
 			n.ClientReplies = append(n.ClientReplies, msg)
@@ -122,6 +129,27 @@ func (n *Network) identify() error {
 	return n.BatchSend(messages)
 }
 
+func(n *Network) join(msg *irc.Message) bool {
+	name := msg.Params[0]
+
+	if !n.isJoined(name) {
+		channel, _ := channel.New(name)
+		n.Channels = append(n.Channels, channel)
+		return true
+	}
+
+	return false
+}
+
+func (n *Network) isJoined(name string) bool {
+	for _, channel := range n.Channels {
+		if channel.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 // Pong responds to the network's Ping with a Pong command.
 // See RFC 2812 § 3.7.2
 func (n *Network) pong(msg *irc.Message) {
@@ -132,7 +160,7 @@ func (n *Network) pong(msg *irc.Message) {
 }
 
 func (n *Network) localReply() {
-	for _, msg  := range n.ClientReplies {
+	for _, msg := range n.ClientReplies {
 		n.Buffer <- msg
 	}
 }

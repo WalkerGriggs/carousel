@@ -9,6 +9,7 @@ import (
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/identity"
+	"github.com/walkergriggs/carousel/pkg/network"
 )
 
 type Options struct {
@@ -22,6 +23,7 @@ type Client struct {
 	Connection net.Conn           `json:",omitempty"`
 	Buffer     chan *irc.Message  `json:",omitempty"`
 	Ident      *identity.Identity `json:",omitempty"`
+	Network    *network.Network   `json:",omitempty"`
 
 	Encoder *irc.Encoder  `json:",omitempty"`
 	Decoder *irc.Decoder  `json:",omitempty"`
@@ -102,8 +104,31 @@ func (c *Client) heartbeat() {
 
 func (c *Client) Disconnect() {
 	c.LogEntry().Debug("Client disconnected")
+	c.DetachNetwork()
 	c.Connection.Close()
 	close(c.disconnect)
+}
+
+func (c *Client) AttachNetwork(net *network.Network) {
+	c.LogEntry().Debug("Attaching to existing channels")
+	c.Network = net
+	for _, channel := range net.Channels {
+		c.Send(&irc.Message{
+			Prefix:  c.MessagePrefix(),
+			Command: "JOIN",
+			Params:  []string{channel.Name},
+		})
+	}
+}
+
+func (c *Client) DetachNetwork() {
+	c.LogEntry().Debug("Attaching to existing channels")
+	for _, channel := range c.Network.Channels {
+		c.Send(&irc.Message{
+			Command: "PART",
+			Params:  []string{channel.Name},
+		})
+	}
 }
 
 // parseIdent pulls identity parameters out of irc messages and stores them
