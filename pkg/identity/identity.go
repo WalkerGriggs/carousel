@@ -8,3 +8,15 @@ type Identity struct {
 	Realname string `json:"realname"`
 	Password string `json:"password"`
 }
+
+func (i *Identity) CanAuthenticate() bool {
+	return i.Username != "" && i.Password != ""
+}
+
+func (i *Identity) Wait() {
+	for {
+		if i.CanAuthenticate() {
+			return
+		}
+	}
+}

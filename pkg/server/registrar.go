@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"time"
 
 	"gopkg.in/sorcix/irc.v2"
 
@@ -10,37 +9,11 @@ import (
 	"github.com/walkergriggs/carousel/pkg/user"
 )
 
-func (s Server) registerClient(c *client.Client) (*user.User, error) {
-	for {
-		if c.Ident.Username == "" {
-			continue
-		}
-
-		u, err := s.authorizeClient(c)
-		if err != nil {
-			c.LogEntry().
-				WithError(err).
-				Error("Failed to authenticate with user %s. Retrying.\n", c.Ident.Username)
-		}
-
-		if u != nil {
-			c.LogEntry().Infof("Client authenticated with user %s.\n", u.Username)
-			u.Client = c
-			return u, nil
-		}
-
-		// todo: exponential delay?
-		// todo: timeout error?
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
 // authorizeConnection decodes identity information from client connection and
 // authenticates ident against user. If the user exists and authorization is
 // successful, authorizeConnection returns the user.  Otherwise,
 // authorizeConnection returns an error.
 func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
-	// Ensure the User exists.
 	u := s.GetUser(c.Ident.Username)
 	if u == nil {
 		return nil, fmt.Errorf("User %s not found", c.Ident.Username)

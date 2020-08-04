@@ -75,9 +75,11 @@ func (s Server) acceptConnection(ctx context.Context, conn net.Conn) {
 	})
 	c.Listen()
 
-	// authorize is a blocking function, and will not return until the user has
-	// been authroized or (todo) timeout reached
-	u, err := s.registerClient(c)
+	// TODO: Timeout or context
+	// This is an infinite loop if the ident is never populated
+	c.Ident.Wait()
+
+	u, err := s.authorizeClient(c)
 	if err != nil {
 		c.LogEntry().WithError(err).Error("Failed to authorize client.")
 		c.Disconnect()
