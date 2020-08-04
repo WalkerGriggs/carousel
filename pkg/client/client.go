@@ -2,7 +2,7 @@ package client
 
 import (
 	"bufio"
-	"fmt"
+	"context"
 	"net"
 	"time"
 
@@ -14,6 +14,8 @@ import (
 
 type Options struct {
 	Connection net.Conn
+	Ctx        context.Context
+	Cancel     context.CancelFunc
 }
 
 // Client represents the actual Connection between the User and the Server.
@@ -29,17 +31,14 @@ type Client struct {
 	Decoder *irc.Decoder  `json:",omitempty"`
 	Reader  *bufio.Reader `json:",omitempty"`
 
-	disconnect chan bool `json:",omitempty"`
+	ctx    context.Context    `json:",omitempty"`
+	cancel context.CancelFunc `json:",omitempty"`
 }
 
 // New takes in Client Options and returns a new Client object. In this case,
 // the Connection option is actually mandatory, and New will throw an error only
 // if that connection is nil.
 func New(opts Options) (*Client, error) {
-	if opts.Connection == nil {
-		return nil, fmt.Errorf("Failed to create user client. No connection provided.")
-	}
-
 	return &Client{
 		Connection: opts.Connection,
 		Buffer:     make(chan *irc.Message),
@@ -49,7 +48,8 @@ func New(opts Options) (*Client, error) {
 		Decoder: irc.NewDecoder(opts.Connection),
 		Reader:  bufio.NewReader(opts.Connection),
 
-		disconnect: make(chan bool),
+		ctx:    opts.Ctx,
+		cancel: opts.Cancel,
 	}, nil
 }
 
@@ -94,7 +94,7 @@ func (c *Client) heartbeat() {
 
 	for range time.Tick(30 * time.Second) {
 		select {
-		case <-c.disconnect:
+		case <-c.ctx.Done():
 			return
 		default:
 			c.Ping(c.Ident.Nickname)
@@ -104,31 +104,9 @@ func (c *Client) heartbeat() {
 
 func (c *Client) Disconnect() {
 	c.LogEntry().Debug("Client disconnected")
-	c.DetachNetwork()
+
+	c.cancel()
 	c.Connection.Close()
-	close(c.disconnect)
-}
-
-func (c *Client) AttachNetwork(net *network.Network) {
-	c.LogEntry().Debug("Attaching to existing channels")
-	c.Network = net
-	for _, channel := range net.Channels {
-		c.Send(&irc.Message{
-			Prefix:  c.MessagePrefix(),
-			Command: "JOIN",
-			Params:  []string{channel.Name},
-		})
-	}
-}
-
-func (c *Client) DetachNetwork() {
-	c.LogEntry().Debug("Attaching to existing channels")
-	for _, channel := range c.Network.Channels {
-		c.Send(&irc.Message{
-			Command: "PART",
-			Params:  []string{channel.Name},
-		})
-	}
 }
 
 // parseIdent pulls identity parameters out of irc messages and stores them

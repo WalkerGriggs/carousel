@@ -1,14 +1,13 @@
 package server
 
 import (
-	"fmt"
+	"context"
 	"net"
-	"time"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/client"
+	"github.com/walkergriggs/carousel/pkg/router"
 	"github.com/walkergriggs/carousel/pkg/uri"
 	"github.com/walkergriggs/carousel/pkg/user"
 )
@@ -50,6 +49,7 @@ func (s Server) Serve() {
 	}
 
 	defer l.Close()
+	ctx := context.Background()
 
 	for {
 		conn, err := l.Accept()
@@ -57,96 +57,40 @@ func (s Server) Serve() {
 			log.Error(err)
 		}
 
-		go s.accept(conn)
+		go s.acceptConnection(ctx, conn)
 	}
 }
 
-// Accept establishes a new connection with the accepted TCP client, and spawns
+// acceptConnection establishes a new connection with the accepted TCP client, and spawns
 // the concurrent processess responsible to message passing between the IRC
 // network and user. Each accepted connection has it's own router and associated
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
-func (s Server) accept(conn net.Conn) {
-	c, err := client.New(client.Options{
+func (s Server) acceptConnection(ctx context.Context, conn net.Conn) {
+	ctx, cancel := context.WithCancel(ctx)
+	c, _ := client.New(client.Options{
 		Connection: conn,
+		Ctx:        ctx,
+		Cancel:     cancel,
 	})
-	if err != nil {
-		c.LogEntry().Error(err)
-		return
-	}
-
 	c.Listen()
 
 	// authorize is a blocking function, and will not return until the user has
 	// been authroized or (todo) timeout reached
-	u, err := s.authorize(c)
+	u, err := s.registerClient(c)
 	if err != nil {
 		c.LogEntry().WithError(err).Error("Failed to authorize client.")
+		c.Disconnect()
 		return
 	}
 
-	go c.Route(u.Network)
-	u.Network.Listen()
-	c.AttachNetwork(u.Network)
-}
-
-func (s Server) authorize(c *client.Client) (*user.User, error) {
-	for {
-		if c.Ident.Username == "" {
-			continue
-		}
-
-		u, err := s.authorizeClient(c)
-		if err != nil {
-			c.LogEntry().
-				WithError(err).
-				Error("Failed to authenticate with user %s. Retrying.\n", c.Ident.Username)
-		}
-
-		if u != nil {
-			c.LogEntry().Infof("Client authenticated with user %s.\n", u.Username)
-			u.Client = c
-			return u, nil
-		}
-
-		// todo: exponential delay?
-		// todo: timeout error?
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
-// authorizeConnection decodes identity information from client connection and
-// authenticates ident against user. If the user exists and authorization is
-// successful, authorizeConnection returns the user.  Otherwise,
-// authorizeConnection returns an error.
-func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
-	// Ensure the User exists.
-	u := s.GetUser(c.Ident.Username)
-	if u == nil {
-		return nil, fmt.Errorf("User %s not found", c.Ident.Username)
+	router := router.Router{
+		Client:  c,
+		Network: u.Network,
+		Ctx:     ctx,
 	}
 
-	// Ensure the User successfully authorized. If authorization fails, send the
-	// client Error 464.
-	if !u.Authorized(*c.Ident) {
-		c.Send(&irc.Message{
-			Command: irc.ERR_PASSWDMISMATCH,
-			Params:  []string{"irc.carousel.in", c.Ident.Nickname, "Password incorrect"},
-		})
-		return nil, fmt.Errorf("Authentication for user %s failed.", c.Ident.Username)
-	}
-
-	return u, nil
-}
-
-// getUser searches the server's users and retrieves the user matching the given
-// username. This function is only a helper until a better User storage solution
-// is implemented.
-func (s Server) GetUser(username string) *user.User {
-	for _, user := range s.Users {
-		if username == user.Username {
-			return user
-		}
-	}
-	return nil
+	go u.Network.Listen()
+	go router.AttachClient()
+	go router.Route()
 }

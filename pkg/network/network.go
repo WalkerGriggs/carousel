@@ -17,10 +17,10 @@ type Options struct {
 // Network represents an IRC network. Each network has a URI, and, because Users
 // own the Network object, each Network stores the User's Identity as well.
 type Network struct {
-	Name     string            `json:"name"`
-	URI      uri.URI           `json:"uri"`
-	Ident    identity.Identity `json:"ident"`
-	Buffer   chan *irc.Message `json:",omitempty"`
+	Name     string             `json:"name"`
+	URI      uri.URI            `json:"uri"`
+	Ident    identity.Identity  `json:"ident"`
+	Buffer   chan *irc.Message  `json:",omitempty"`
 	Channels []*channel.Channel `json:",omitempty"`
 
 	Connection    *irc.Conn      `json:",omitempty"`
@@ -66,7 +66,6 @@ func (n *Network) Listen() {
 // network encounters an error when receiving messages.
 func (n *Network) listen() {
 	n.LogEntry().Debug("Listening to network.")
-
 	for {
 		msg, err := n.Receive()
 		if err != nil {
@@ -80,7 +79,7 @@ func (n *Network) listen() {
 			continue
 
 		case "JOIN":
-			n.join(msg)
+			n.joinChannel(msg)
 
 		case "001", "002", "003", "004", "005":
 			n.ClientReplies = append(n.ClientReplies, msg)
@@ -129,7 +128,7 @@ func (n *Network) identify() error {
 	return n.BatchSend(messages)
 }
 
-func(n *Network) join(msg *irc.Message) bool {
+func (n *Network) joinChannel(msg *irc.Message) bool {
 	name := msg.Params[0]
 
 	if !n.isJoined(name) {
