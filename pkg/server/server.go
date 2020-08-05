@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"net"
 
 	log "github.com/sirupsen/logrus"
@@ -49,7 +48,6 @@ func (s Server) Serve() {
 	}
 
 	defer l.Close()
-	ctx := context.Background()
 
 	for {
 		conn, err := l.Accept()
@@ -57,7 +55,7 @@ func (s Server) Serve() {
 			log.Error(err)
 		}
 
-		go s.acceptConnection(ctx, conn)
+		go s.acceptConnection(conn)
 	}
 }
 
@@ -66,14 +64,12 @@ func (s Server) Serve() {
 // network and user. Each accepted connection has it's own router and associated
 // user, so accept should only return when the user disconnects, or does not
 // authenticate.
-func (s Server) acceptConnection(ctx context.Context, conn net.Conn) {
-	ctx, cancel := context.WithCancel(ctx)
+func (s Server) acceptConnection(conn net.Conn) {
+	done := make(chan bool)
 	c, _ := client.New(client.Options{
 		Connection: conn,
-		Ctx:        ctx,
-		Cancel:     cancel,
 	})
-	c.Listen()
+	c.Listen(done)
 
 	// TODO: Timeout or context
 	// This is an infinite loop if the ident is never populated
@@ -89,10 +85,9 @@ func (s Server) acceptConnection(ctx context.Context, conn net.Conn) {
 	router := router.Router{
 		Client:  c,
 		Network: u.Network,
-		Ctx:     ctx,
 	}
 
 	go u.Network.Listen()
 	go router.AttachClient()
-	go router.Route()
+	go router.Route(done)
 }

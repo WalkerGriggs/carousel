@@ -1,8 +1,6 @@
 package router
 
 import (
-	"context"
-
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/client"
@@ -12,19 +10,18 @@ import (
 type Router struct {
 	Client  *client.Client
 	Network *network.Network
-	Ctx     context.Context
 }
 
 // Route passes messages from the given Network buffer to the Client buffer, and
 // visa versa. Route also calls heartbeat to periodically ping the Client's
 // Connection. If the Client doesn' respond to the Ping or encounters an error
 // when sending to either the Client or Network, Route returns.
-func (r *Router) Route() {
+func (r *Router) Route(done chan bool) {
 	r.Client.LogEntry().Debug("Routing messages between client and network")
 
 	for {
 		select {
-		case <-r.Ctx.Done():
+		case <-done:
 			r.DetachClient()
 			return
 
