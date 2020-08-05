@@ -8,8 +8,9 @@ import (
 )
 
 type Router struct {
-	Client  *client.Client
-	Network *network.Network
+	Client      *client.Client
+	Network     *network.Network
+	HostAddress string
 }
 
 // Route passes messages from the given Network buffer to the Client buffer, and
@@ -41,10 +42,24 @@ func (r *Router) Route(done chan bool) {
 func (r *Router) AttachClient() {
 	r.Client.LogEntry().Debug("Attaching to existing channels")
 
+	prefix := &irc.Prefix{
+		Name: r.Client.Ident.Nickname,
+		User: r.Client.Ident.Username,
+		Host: r.HostAddress,
+	}
+
 	for _, channel := range r.Network.Channels {
 		r.Client.Send(&irc.Message{
-			Prefix:  r.Client.MessagePrefix(),
+			Prefix:  prefix,
 			Command: "JOIN",
+			Params:  []string{channel.Name},
+		})
+
+		// TODO: this is a bit of a hack. Instead of sending names to the client,
+		// ask the network for channel names which will be routed through to the
+		// client.
+		r.Network.Send(&irc.Message{
+			Command: "NAMES",
 			Params:  []string{channel.Name},
 		})
 	}
