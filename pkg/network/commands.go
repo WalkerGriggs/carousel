@@ -8,7 +8,12 @@ import (
 
 type CommandHook func(n *Network, msg *irc.Message)
 
-var CommandTable = map[string]CommandHook {
+var CommandTable = map[string]CommandHook{
+	"001":  (*Network).rpl_welcome,
+	"002":  (*Network).rpl_welcome,
+	"003":  (*Network).rpl_welcome,
+	"004":  (*Network).rpl_welcome,
+	"005":  (*Network).rpl_welcome,
 	"PING": (*Network).pong,
 	"JOIN": (*Network).join,
 	"353":  (*Network).rpl_namreply,
@@ -25,6 +30,10 @@ func (n *Network) join(msg *irc.Message) {
 		channel, _ := channel.New(name)
 		n.Channels = append(n.Channels, channel)
 	}
+}
+
+func (n *Network) rpl_welcome(msg *irc.Message) {
+	n.ClientReplies = append(n.ClientReplies, msg)
 }
 
 func (n *Network) rpl_namreply(msg *irc.Message) {

@@ -85,13 +85,12 @@ func (n *Network) listen() {
 			CommandTable["353"](n, msg)
 
 		case "001", "002", "003", "004", "005":
-			n.ClientReplies = append(n.ClientReplies, msg)
+			CommandTable["001"](n, msg)
 		}
 
 		n.Buffer <- msg
 	}
 }
-
 
 // connect dials the network and identifies. If the dial throws an error,
 // connect short circuits -- handle this accordingly.
