@@ -73,19 +73,15 @@ func (n *Network) listen() {
 			return
 		}
 
-		switch msg.Command {
-		case "PING":
-			CommandTable["JOIN"](n, msg)
-			continue
+		hook := CommandTable[msg.Command]
+		if hook != nil {
+			send, err := hook(n, msg)
+			if err != nil {
+				n.LogEntry().WithError(err).Error(err.Error())
+			}
 
-		case "JOIN":
-			CommandTable["JOIN"](n, msg)
+			if !send { continue }
 
-		case "353":
-			CommandTable["353"](n, msg)
-
-		case "001", "002", "003", "004", "005":
-			CommandTable["001"](n, msg)
 		}
 
 		n.Buffer <- msg
