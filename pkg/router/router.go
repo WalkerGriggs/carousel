@@ -55,12 +55,16 @@ func (r *Router) AttachClient() {
 			Params:  []string{channel.Name},
 		})
 
-		// TODO: this is a bit of a hack. Instead of sending names to the client,
-		// ask the network for channel names which will be routed through to the
-		// client.
-		r.Network.Send(&irc.Message{
-			Command: "NAMES",
-			Params:  []string{channel.Name},
+		params := append([]string{prefix.Name, "=", channel.Name}, channel.Nicks...)
+		r.Network.LogEntry().Debug(params)
+		r.Client.Send(&irc.Message{
+			Command: "353",
+			Params:  params,
+		})
+
+		r.Client.Send(&irc.Message{
+			Command: "366",
+			Params: []string{channel.Name, ":End of NAMES list"},
 		})
 	}
 }

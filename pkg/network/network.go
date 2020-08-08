@@ -75,11 +75,14 @@ func (n *Network) listen() {
 
 		switch msg.Command {
 		case "PING":
-			n.pong(msg)
+			CommandTable["JOIN"](n, msg)
 			continue
 
 		case "JOIN":
-			n.joinChannel(msg)
+			CommandTable["JOIN"](n, msg)
+
+		case "353":
+			CommandTable["353"](n, msg)
 
 		case "001", "002", "003", "004", "005":
 			n.ClientReplies = append(n.ClientReplies, msg)
@@ -88,6 +91,7 @@ func (n *Network) listen() {
 		n.Buffer <- msg
 	}
 }
+
 
 // connect dials the network and identifies. If the dial throws an error,
 // connect short circuits -- handle this accordingly.
@@ -128,27 +132,6 @@ func (n *Network) identify() error {
 	return n.BatchSend(messages)
 }
 
-func (n *Network) joinChannel(msg *irc.Message) bool {
-	name := msg.Params[0]
-
-	if !n.isJoined(name) {
-		channel, _ := channel.New(name)
-		n.Channels = append(n.Channels, channel)
-		return true
-	}
-
-	return false
-}
-
-func (n *Network) isJoined(name string) bool {
-	for _, channel := range n.Channels {
-		if channel.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
 // Pong responds to the network's Ping with a Pong command.
 // See RFC 2812 § 3.7.2
 func (n *Network) pong(msg *irc.Message) {
@@ -162,4 +145,22 @@ func (n *Network) localReply() {
 	for _, msg := range n.ClientReplies {
 		n.Buffer <- msg
 	}
+}
+
+func (n *Network) isJoined(name string) bool {
+	for _, channel := range n.Channels {
+		if channel.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (n *Network) getChannel(name string) *channel.Channel {
+	for _, channel := range n.Channels {
+		if channel.Name == name {
+			return channel
+		}
+	}
+	return nil
 }
