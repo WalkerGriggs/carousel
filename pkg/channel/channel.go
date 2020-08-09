@@ -1,13 +1,13 @@
 package channel
 
 type Channel struct {
-	Name string `json:",omitempty"`
+	Name  string   `json:",omitempty"`
 	Nicks []string `json:",omitempty"`
 }
 
 func New(name string) (*Channel, error) {
 	return &Channel{
-		Name: name,
+		Name:  name,
 		Nicks: make([]string, 1),
 	}, nil
 }

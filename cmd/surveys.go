@@ -75,7 +75,7 @@ func survey_uri() uri.URI {
 	return uri
 }
 
-func survey_identity() identity.Identity {
+func survey_identity() *identity.Identity {
 	var ident identity.Identity
 	err := survey.Ask(ident_questions, &ident)
 	if err != nil {
@@ -95,7 +95,7 @@ func survey_identity() identity.Identity {
 		ident.Realname = ident.Username
 	}
 
-	return ident
+	return &ident
 }
 
 func survey_confirm(prompt string) bool {

@@ -11,7 +11,7 @@ import (
 type Options struct {
 	Name  string
 	URI   uri.URI
-	Ident identity.Identity
+	Ident *identity.Identity
 }
 
 // Network represents an IRC network. Each network has a URI, and, because Users
@@ -19,7 +19,7 @@ type Options struct {
 type Network struct {
 	Name     string             `json:"name"`
 	URI      uri.URI            `json:"uri"`
-	Ident    identity.Identity  `json:"ident"`
+	Ident    *identity.Identity `json:"ident"`
 	Buffer   chan *irc.Message  `json:",omitempty"`
 	Channels []*channel.Channel `json:",omitempty"`
 
@@ -80,7 +80,9 @@ func (n *Network) listen() {
 				n.LogEntry().WithError(err).Error(err.Error())
 			}
 
-			if !send { continue }
+			if !send {
+				continue
+			}
 
 		}
 

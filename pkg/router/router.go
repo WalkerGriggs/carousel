@@ -40,6 +40,27 @@ func (r *Router) Route(done chan bool) {
 }
 
 func (r *Router) AttachClient() {
+	r.setIdent()
+	r.joinChannels()
+}
+
+func (r *Router) DetachClient() {
+	r.Client.LogEntry().Debug("Detaching from channels")
+
+	for _, channel := range r.Network.Channels {
+		r.Client.Send(&irc.Message{
+			Command: "PART",
+			Params:  []string{channel.Name},
+		})
+	}
+}
+
+func (r *Router) setIdent() {
+	r.Client.LogEntry().Debug("Setting ident")
+	r.Client.Ident = r.Network.Ident
+}
+
+func (r *Router) joinChannels() {
 	r.Client.LogEntry().Debug("Attaching to existing channels")
 
 	prefix := &irc.Prefix{
@@ -64,18 +85,7 @@ func (r *Router) AttachClient() {
 
 		r.Client.Send(&irc.Message{
 			Command: "366",
-			Params: []string{channel.Name, ":End of NAMES list"},
-		})
-	}
-}
-
-func (r *Router) DetachClient() {
-	r.Client.LogEntry().Debug("Detaching from channels")
-
-	for _, channel := range r.Network.Channels {
-		r.Client.Send(&irc.Message{
-			Command: "PART",
-			Params:  []string{channel.Name},
+			Params:  []string{channel.Name, ":End of NAMES list"},
 		})
 	}
 }
