@@ -1,4 +1,4 @@
-package router
+package server
 
 import (
 	"gopkg.in/sorcix/irc.v2"
@@ -8,9 +8,9 @@ import (
 )
 
 type Router struct {
+	Server      *Server
 	Client      *client.Client
 	Network     *network.Network
-	HostAddress string
 }
 
 // Route passes messages from the given Network buffer to the Client buffer, and
@@ -66,7 +66,7 @@ func (r *Router) joinChannels() {
 	prefix := &irc.Prefix{
 		Name: r.Client.Ident.Nickname,
 		User: r.Client.Ident.Username,
-		Host: r.HostAddress,
+		Host: r.Server.URI.Host,
 	}
 
 	for _, channel := range r.Network.Channels {
