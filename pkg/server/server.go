@@ -2,6 +2,7 @@ package server
 
 import (
 	"net"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -65,14 +66,14 @@ func (s Server) Serve() {
 // authenticate.
 func (s Server) acceptConnection(conn net.Conn) {
 	done := make(chan bool)
-	c, _ := client.New(client.Options{
-		Connection: conn,
-	})
+	c, _ := client.New(client.Options{conn})
 	c.Listen(done)
 
-	// TODO: Timeout or context
-	// This is an infinite loop if the ident is never populated
-	c.Ident.Wait()
+	if err := c.Ident.Wait(10 * time.Second); err != nil {
+		c.LogEntry().WithError(err).Error("Failed to authorize client.")
+		c.Disconnect()
+		return
+	}
 
 	u, err := s.authorizeClient(c)
 	if err != nil {
