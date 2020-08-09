@@ -1,6 +1,8 @@
 package user
 
 import (
+	"fmt"
+
 	"github.com/walkergriggs/carousel/pkg/client"
 	"github.com/walkergriggs/carousel/pkg/crypto/phash"
 	"github.com/walkergriggs/carousel/pkg/identity"
@@ -34,6 +36,9 @@ func New(opts Options) (*User, error) {
 // Authorized compares the given password with the password hash stored in the
 // config. The user's password isn't stored in plaintext (for very obvious
 // reasons, so we have to hash and salt the supplied password before comparing)
-func (u *User) Authorized(ident identity.Identity) bool {
-	return phash.HashesMatch(u.Password, ident.Password)
+func (u *User) Authorize(ident identity.Identity) error {
+	if !phash.HashesMatch(u.Password, ident.Password) {
+		return fmt.Errorf("Authorization for user %s failed.", ident.Username)
+	}
+	return nil
 }

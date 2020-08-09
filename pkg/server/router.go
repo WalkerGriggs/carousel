@@ -8,9 +8,9 @@ import (
 )
 
 type Router struct {
-	Server      *Server
-	Client      *client.Client
-	Network     *network.Network
+	Server  *Server
+	Client  *client.Client
+	Network *network.Network
 }
 
 // Route passes messages from the given Network buffer to the Client buffer, and
