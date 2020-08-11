@@ -17,8 +17,12 @@ type Identity struct {
 
 func (i *Identity) CanAuthenticate() bool {
 	return i.Username != "" && i.Password != ""
+
 }
 
+// Wait returns if the identity is populated (has a username and password). If
+// the ident cannot be authenticated by some given timeout duration, it returns
+// an error.
 func (i *Identity) Wait(duration time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
 	defer cancel()

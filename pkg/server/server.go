@@ -59,11 +59,9 @@ func (s Server) Serve() {
 	}
 }
 
-// acceptConnection establishes a new connection with the accepted TCP client, and spawns
-// the concurrent processess responsible to message passing between the IRC
-// network and user. Each accepted connection has it's own router and associated
-// user, so accept should only return when the user disconnects, or does not
-// authenticate.
+// acceptConnection establishes a new connection with the accepted TCP client,
+// and spawns the concurrent processess responsible to message passing between
+// the network and user.
 func (s Server) acceptConnection(conn net.Conn) {
 	done := make(chan bool)
 	c, _ := client.New(client.Options{conn})

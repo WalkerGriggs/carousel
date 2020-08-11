@@ -7,6 +7,8 @@ import (
 	"github.com/walkergriggs/carousel/pkg/crypto/ssl"
 )
 
+// listener returns a new network listener at the given address. This listener
+// is not SSL encrypted.
 func (s Server) listener() (net.Listener, error) {
 	if s.SSLEnabled {
 		return s.tlsListener()
@@ -15,6 +17,8 @@ func (s Server) listener() (net.Listener, error) {
 	return net.Listen("tcp", s.URI.String())
 }
 
+// tlsListener returns a network listener at the given address. This listener
+// is ssl encryped using the configued certificate.
 func (s Server) tlsListener() (net.Listener, error) {
 	cert, err := ssl.LoadPem(s.CertificatePath)
 	if err != nil {

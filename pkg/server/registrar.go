@@ -9,10 +9,10 @@ import (
 	"github.com/walkergriggs/carousel/pkg/user"
 )
 
-// authorizeConnection decodes identity information from client connection and
-// authenticates ident against user. If the user exists and authorization is
-// successful, authorizeConnection returns the user.  Otherwise,
-// authorizeConnection returns an error.
+// authorizeClient uses identity information (username and password) provided by
+// the connected client to authenticate some user. authorizeClient will return
+// an error if provided user does not exist or if the password provided does not
+// match the file on record. It returns the user if the credentials are correct.
 func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
 	u, err := s.GetUser(c.Ident.Username)
 	if err != nil {
@@ -34,8 +34,8 @@ func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
 }
 
 // getUser searches the server's users and retrieves the user matching the given
-// username. This function is only a helper until a better User storage solution
-// is implemented.
+// username. It returns an error if the user does not exist. This function is
+// only a helper until a better User storage solution is implemented.
 func (s Server) GetUser(username string) (*user.User, error) {
 	for _, user := range s.Users {
 		if username == user.Username {

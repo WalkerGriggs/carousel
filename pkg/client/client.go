@@ -29,9 +29,7 @@ type Client struct {
 	Reader  *bufio.Reader `json:",omitempty"`
 }
 
-// New takes in Client Options and returns a new Client object. In this case,
-// the Connection option is actually mandatory, and New will throw an error only
-// if that connection is nil.
+// New takes in Client Options and returns a new Client object.
 func New(opts Options) (*Client, error) {
 	return &Client{
 		Connection: opts.Connection,
@@ -49,9 +47,9 @@ func (c *Client) Listen(done chan bool) {
 	go c.heartbeat(done)
 }
 
-// Local reads, sanitizes, and forwards all messages sent from the User directed
-// towards the Network. In its current state, this blocking process should only
-// exit if...
+// Listen reads, sanitizes, and forwards all messages sent from the Client
+// directed towards the Network. In its current state, this blocking process
+// should only exit if...
 //   - the reader throws an error
 //   - the Client disconnects
 func (c *Client) listen(done chan bool) {
@@ -81,6 +79,9 @@ func (c *Client) listen(done chan bool) {
 	}
 }
 
+// heartbeat sends a ping message every 30 seonds to the client. It takes a done
+// channel as a replacement to context.
+// TODO: Close the `done` channel if the client doesn't reply with a PONG.
 func (c *Client) heartbeat(done chan bool) {
 	c.LogEntry().Debug("Starting heartbeat for client connection.")
 
@@ -94,13 +95,15 @@ func (c *Client) heartbeat(done chan bool) {
 	}
 }
 
+// Disconnect closes the client connection.
 func (c *Client) Disconnect() {
 	c.LogEntry().Debug("Client disconnected")
 	c.Connection.Close()
 }
 
 // parseIdent pulls identity parameters out of irc messages and stores them
-// in the client.
+// in the client. This ident information is used to authenticate the client as a
+// user, not to authenticate the client with the network.
 func (c *Client) parseIdent(msg *irc.Message) {
 	switch msg.Command {
 	case "USER":

@@ -39,11 +39,17 @@ func (r *Router) Route(done chan bool) {
 	}
 }
 
+// AttachClient should run after a client first connects and authenticates. It
+// joins channels, sets ident, and performs general post-connection tasks.
 func (r *Router) AttachClient() {
 	r.setIdent()
 	r.joinChannels()
 }
 
+// DetachClient should run before a client disconnects. Specifically, it parts
+// from all channels. The network should stay attached to the channels even after
+// the client disconnects, so this messages should be sent directly from the server
+// to the client.
 func (r *Router) DetachClient() {
 	r.Client.LogEntry().Debug("Detaching from channels")
 
@@ -60,6 +66,8 @@ func (r *Router) setIdent() {
 	r.Client.Ident = r.Network.Ident
 }
 
+// joinChannel sends a join reply, followed by the names list directly to the
+// the client. This should only be used directly after the client connects.
 func (r *Router) joinChannels() {
 	r.Client.LogEntry().Debug("Attaching to existing channels")
 

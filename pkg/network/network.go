@@ -39,11 +39,10 @@ func New(opts Options) (*Network, error) {
 	}, nil
 }
 
-// Listen attempts to connect and listen if the network isn't already connectedif network isn't already connected and  listens to ensures the network is connected and listening. If the
-// network is already connected, this function is a no-op.
+// Listen attempts to connect and listen if the Network isn't already connected.
 //
-// If the Network's Connection is nil when Wide is called, Wide will attempt to
-// connected the Network. If the connection fails, Wide logs an error and exits.
+// If the Network's Connection is nil when Listen is called, Listen will attempt to
+// connected the Network. If the connection fails, Listen logs an error and exits.
 func (n *Network) Listen() {
 	if n.Connection == nil {
 		n.LogEntry().Debug("Establishing connection")
@@ -61,9 +60,9 @@ func (n *Network) Listen() {
 	}
 }
 
-// listen reads, parses, and forwards all mesages sent from the network to the
-// client. in it's current state, this blocking function should exit if the
-// network encounters an error when receiving messages.
+// listen reads, parses, and forwards all mesages sent from the Network to the
+// Client. In it's current state, this blocking function should exit if the
+// Network encounters an error when receiving messages.
 func (n *Network) listen() {
 	n.LogEntry().Debug("Listening to network.")
 	for {
@@ -138,12 +137,14 @@ func (n *Network) pong(msg *irc.Message) {
 	})
 }
 
+// localReply relays welcome messages to the client.
 func (n *Network) localReply() {
 	for _, msg := range n.ClientReplies {
 		n.Buffer <- msg
 	}
 }
 
+// isJoined checks checks if the network has already joined the give channel.
 func (n *Network) isJoined(name string) bool {
 	for _, channel := range n.Channels {
 		if channel.Name == name {
@@ -153,6 +154,9 @@ func (n *Network) isJoined(name string) bool {
 	return false
 }
 
+
+// getChannel searches the networks channels and retrieves the channel matching
+// the given channel name.
 func (n *Network) getChannel(name string) *channel.Channel {
 	for _, channel := range n.Channels {
 		if channel.Name == name {

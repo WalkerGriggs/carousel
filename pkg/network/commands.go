@@ -10,6 +10,9 @@ import (
 
 type CommandHook func(n *Network, msg *irc.Message) (bool, error)
 
+// CommandTable maps IRC to commands to hooks. Whenever the network receives a
+// message, it looks up the command in the CommandTable and runs the corresponding
+// function.
 var CommandTable = map[string]CommandHook{
 	"001":  (*Network).rpl_welcome,
 	"002":  (*Network).rpl_welcome,
@@ -21,11 +24,13 @@ var CommandTable = map[string]CommandHook{
 	"353":  (*Network).rpl_namreply,
 }
 
+// ping responds to the network with a pong.
 func (n *Network) ping(msg *irc.Message) (bool, error) {
 	n.pong(msg)
 	return false, nil
 }
 
+// join adds the specified Channel to the Network.
 func (n *Network) join(msg *irc.Message) (bool, error) {
 	name := msg.Params[0]
 	if !n.isJoined(name) {
@@ -35,11 +40,14 @@ func (n *Network) join(msg *irc.Message) (bool, error) {
 	return true, nil
 }
 
+// rpl_welcome records welcome messages to be relayed to the Client on subsequent
+// connections.
 func (n *Network) rpl_welcome(msg *irc.Message) (bool, error) {
 	n.ClientReplies = append(n.ClientReplies, msg)
 	return true, nil
 }
 
+// rpl_namreply adds specific nicks to a Channel.
 func (n *Network) rpl_namreply(msg *irc.Message) (bool, error) {
 	channel := n.getChannel(msg.Params[2])
 	if channel == nil {
