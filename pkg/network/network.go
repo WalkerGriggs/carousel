@@ -19,12 +19,12 @@ type Options struct {
 type Network struct {
 	Name     string             `json:"name"`
 	URI      uri.URI            `json:"uri"`
-	Ident    *identity.Identity `json:"ident"`
-	Buffer   chan *irc.Message  `json:",omitempty"`
+	Ident    *identity.Identity `json:"ident,omitempty"`
 	Channels []*channel.Channel `json:",omitempty"`
 
-	Connection    *irc.Conn      `json:",omitempty"`
-	ClientReplies []*irc.Message `json:",omitempty"`
+	Buffer        chan *irc.Message `json:"-,omitempty"`
+	Connection    *irc.Conn         `json:"-,omitempty"`
+	ClientReplies []*irc.Message    `json:"-,omitempty"`
 }
 
 // New takes in Network Options and returns a new Network object. In this case,
@@ -153,7 +153,6 @@ func (n *Network) isJoined(name string) bool {
 	}
 	return false
 }
-
 
 // getChannel searches the networks channels and retrieves the channel matching
 // the given channel name.

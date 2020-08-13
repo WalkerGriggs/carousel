@@ -35,7 +35,7 @@ func validate_alphanumeric(val interface{}) error {
 	return validate_string_rule(val, is.Alphanumeric)
 }
 
-func validate_string_rule(val interface{}, rule validation.StringRule) error {
+func validate_string_rule(val interface{}, rule *validation.StringRule) error {
 	return validation.Validate(val,
 		validation.Required,
 		rule,

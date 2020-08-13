@@ -14,7 +14,7 @@ func init() {
 
 	log.SetOutput(os.Stdout)
 	log.SetFormatter(formatter)
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 }
 
 func main() {

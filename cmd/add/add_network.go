@@ -1,0 +1,71 @@
+package add
+
+import (
+	"fmt"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+
+	"github.com/walkergriggs/carousel/cmd/config"
+	"github.com/walkergriggs/carousel/pkg/network"
+	"github.com/walkergriggs/carousel/pkg/uri"
+)
+
+type CmdNetworkOptions struct {
+	User    string
+	Address string
+	Port    int
+	Name    string
+}
+
+func NewCmdNetwork(configAccess config.ConfigAccess) *cobra.Command {
+	o := &CmdNetworkOptions{}
+
+	cmd := &cobra.Command{
+		Use:                   "network name (--user) (--addr) [--port]",
+		DisableFlagsInUseLine: true,
+		Short:                 "Adds network to user",
+		Run: func(cmd *cobra.Command, args []string) {
+			o.Complete(cmd, args)
+			o.Run(configAccess)
+		},
+	}
+
+	cmd.Flags().StringVarP(&o.User, "user", "u", o.User, "User to add the network to")
+	cmd.Flags().StringVarP(&o.Address, "address", "a", o.Address, "Network address")
+	cmd.Flags().IntVarP(&o.Port, "port", "p", 6667, "Network port")
+
+	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("address")
+
+	return cmd
+}
+
+func (o *CmdNetworkOptions) Complete(cmd *cobra.Command, args []string) {
+	o.Name = args[0]
+}
+
+func (o *CmdNetworkOptions) Run(configAccess config.ConfigAccess) {
+	startingConfig, err := configAccess.GetStartingConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	net := &network.Network{
+		Name: o.Name,
+		URI: uri.URI{
+			Host: o.Address,
+			Port: o.Port,
+		},
+	}
+
+	for _, user := range startingConfig.Users {
+		if user.Username == o.User {
+			user.Network = net
+			config.ModifyFile(configAccess, *startingConfig)
+			return
+		}
+	}
+
+	log.Fatal(fmt.Errorf("User %s not found.\n", o.User))
+}

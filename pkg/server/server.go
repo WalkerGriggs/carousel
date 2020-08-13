@@ -42,6 +42,8 @@ func New(opts Options) (*Server, error) {
 // only return if the TCP listener closes or errors (even if there are no active
 // connections).
 func (s Server) Serve() {
+	log.Info("Listening at ", s.URI.String())
+
 	l, err := s.listener()
 	if err != nil {
 		log.Fatal(err)
