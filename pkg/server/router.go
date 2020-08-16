@@ -43,7 +43,10 @@ func (r *Router) Route(done chan bool) {
 // joins channels, sets ident, and performs general post-connection tasks.
 func (r *Router) AttachClient() {
 	r.setIdent()
-	r.joinChannels()
+
+	if err := r.joinChannels(); err != nil {
+		r.Client.LogEntry().WithError(err).Error(err)
+	}
 }
 
 // DetachClient should run before a client disconnects. Specifically, it parts
@@ -62,38 +65,37 @@ func (r *Router) DetachClient() {
 }
 
 func (r *Router) setIdent() {
-	r.Client.LogEntry().Debug("Setting ident")
 	r.Client.Ident = r.Network.Ident
 }
 
 // joinChannel sends a join reply, followed by the names list directly to the
 // the client. This should only be used directly after the client connects.
-func (r *Router) joinChannels() {
-	r.Client.LogEntry().Debug("Attaching to existing channels")
-
+func (r *Router) joinChannels() error {
 	prefix := &irc.Prefix{
 		Name: r.Client.Ident.Nickname,
 		User: r.Client.Ident.Username,
 		Host: r.Server.URI.Host,
 	}
 
+	var messages []*irc.Message
+
 	for _, channel := range r.Network.Channels {
-		r.Client.Send(&irc.Message{
+		messages = append(messages, &irc.Message{
 			Prefix:  prefix,
 			Command: "JOIN",
 			Params:  []string{channel.Name},
 		})
 
-		params := append([]string{prefix.Name, "=", channel.Name}, channel.Nicks...)
-		r.Network.LogEntry().Debug(params)
-		r.Client.Send(&irc.Message{
+		messages = append(messages, &irc.Message{
 			Command: "353",
-			Params:  params,
+			Params:  append([]string{prefix.Name, "=", channel.Name}, channel.Nicks...),
 		})
 
-		r.Client.Send(&irc.Message{
+		messages = append(messages, &irc.Message{
 			Command: "366",
 			Params:  []string{channel.Name, ":End of NAMES list"},
 		})
 	}
+
+	return r.Client.BatchSend(messages)
 }
