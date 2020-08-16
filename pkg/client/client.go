@@ -62,18 +62,19 @@ func (c *Client) listen(done chan bool) {
 			return
 		}
 
-		// Parse and store USER, NICK, and PASS commands used by the client to
-		// authenticate with specified user. Otherwise, pass the message along.x
-		switch msg.Command {
-		case "USER", "NICK", "PASS":
-			c.parseIdent(msg)
-
-		case "QUIT":
+		if msg.Command == "QUIT" {
 			c.Disconnect()
 			close(done)
 			return
+		}
 
-		default:
+		send, err := ClientCommandTable.MaybeRun(c, msg)
+		if err != nil {
+			c.LogEntry().WithError(err).Error(err)
+			return
+		}
+
+		if send {
 			c.Buffer <- msg
 		}
 	}
