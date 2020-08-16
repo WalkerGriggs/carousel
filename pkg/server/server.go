@@ -2,7 +2,6 @@ package server
 
 import (
 	"net"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -69,13 +68,7 @@ func (s Server) acceptConnection(conn net.Conn) {
 	c, _ := client.New(client.Options{conn})
 	c.Listen(done)
 
-	if err := c.Ident.Wait(10 * time.Second); err != nil {
-		c.LogEntry().WithError(err).Error("Failed to authorize client.")
-		c.Disconnect()
-		return
-	}
-
-	u, err := s.authorizeClient(c)
+	u, err := s.blockingAuthorizeClient(c)
 	if err != nil {
 		c.LogEntry().WithError(err).Error("Failed to authorize client.")
 		c.Disconnect()

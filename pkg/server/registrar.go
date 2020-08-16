@@ -2,12 +2,21 @@ package server
 
 import (
 	"fmt"
+	"time"
 
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/client"
 	"github.com/walkergriggs/carousel/pkg/user"
 )
+
+func (s Server) blockingAuthorizeClient(c *client.Client) (*user.User, error) {
+	if err := c.Ident.Wait(30 * time.Second); err != nil {
+		return nil, err
+	}
+
+	return s.authorizeClient(c)
+}
 
 // authorizeClient uses identity information (username and password) provided by
 // the connected client to authenticate some user. authorizeClient will return
