@@ -1,6 +1,8 @@
 package router
 
 import (
+	"context"
+
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/client"
@@ -18,23 +20,23 @@ type Router struct {
 // visa versa. Route also calls heartbeat to periodically ping the Client's
 // Connection. If the Client doesn' respond to the Ping or encounters an error
 // when sending to either the Client or Network, Route returns.
-func (r *Router) Route(done chan bool) {
-	r.Client.LogEntry().Debug("Routing messages between client and network")
+func (r *Router) Route(ctx context.Context) error {
+	r.Client.LogEntry().Debug("Starting to route messages.")
 
 	for {
 		select {
-		case <-done:
-			r.DetachClient()
-			return
+		case <-ctx.Done():
+			r.Client.LogEntry().Debug("Stopping to route messages.")
+			return ctx.Err()
 
 		case msg := <-r.Client.Buffer:
 			if err := r.Network.Send(msg); err != nil {
-				r.Network.LogEntry().WithError(err).Error("Failed to send to network.")
+				r.Network.LogEntry().WithError(err).Error("Router failed to send to network.")
 			}
 
 		case msg := <-r.Network.Buffer:
 			if err := r.Client.Send(msg); err != nil {
-				r.Client.LogEntry().WithError(err).Error("Failed to send to client.")
+				r.Client.LogEntry().WithError(err).Error("Router failed to send to client.")
 			}
 		}
 	}
@@ -54,15 +56,17 @@ func (r *Router) AttachClient() {
 // from all channels. The network should stay attached to the channels even after
 // the client disconnects, so this messages should be sent directly from the server
 // to the client.
-func (r *Router) DetachClient() {
-	r.Client.LogEntry().Debug("Detaching from channels")
+func (r *Router) DetachClient() error {
+	var messages []*irc.Message
 
 	for _, channel := range r.Network.Channels {
-		r.Client.Send(&irc.Message{
+		messages = append(messages, &irc.Message{
 			Command: "PART",
 			Params:  []string{channel.Name},
 		})
 	}
+
+	return r.Client.BatchSend(messages)
 }
 
 func (r *Router) setIdent() {

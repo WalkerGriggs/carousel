@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"context"
 	"net"
 	"time"
 
@@ -42,40 +43,32 @@ func New(opts Options) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) Listen(done chan bool) {
-	go c.listen(done)
-	go c.heartbeat(done)
-}
-
 // Listen reads, sanitizes, and forwards all messages sent from the Client
 // directed towards the Network. In its current state, this blocking process
 // should only exit if...
 //   - the reader throws an error
 //   - the Client disconnects
-func (c *Client) listen(done chan bool) {
-	c.LogEntry().Debug("Listening over client connection.")
+func (c *Client) Listen(ctx context.Context) error {
+	c.LogEntry().Debug("Starting to listen to client connection.")
 
 	for {
-		msg, err := c.Receive()
-		if err != nil {
-			c.LogEntry().WithError(err).Error("Failed to receive message.")
-			return
-		}
+		select {
+		case <-ctx.Done():
+			c.LogEntry().Debug("Stopping to listen to client connection.")
+			return ctx.Err()
 
-		if msg.Command == "QUIT" {
-			c.Disconnect()
-			close(done)
-			return
-		}
+		default:
+			msg, err := c.Receive()
+			if err != nil {
+				return err
+			}
 
-		send, err := ClientCommandTable.MaybeRun(c, msg)
-		if err != nil {
-			c.LogEntry().WithError(err).Error(err)
-			return
-		}
-
-		if send {
-			c.Buffer <- msg
+			send, err := ClientCommandTable.MaybeRun(c, msg)
+			if err != nil {
+				return err
+			} else if send {
+				c.Buffer <- msg
+			}
 		}
 	}
 }
@@ -83,40 +76,26 @@ func (c *Client) listen(done chan bool) {
 // heartbeat sends a ping message every 30 seonds to the client. It takes a done
 // channel as a replacement to context.
 // TODO: Close the `done` channel if the client doesn't reply with a PONG.
-func (c *Client) heartbeat(done chan bool) {
-	c.LogEntry().Debug("Starting heartbeat for client connection.")
+func (c *Client) Heartbeat(ctx context.Context) error {
+	c.LogEntry().Debug("Starting client heartbeat.")
 
 	for range time.Tick(30 * time.Second) {
 		select {
-		case <-done:
-			return
+		case <-ctx.Done():
+			c.LogEntry().Debug("Stopping client heartbeat")
+			return ctx.Err()
+
 		default:
 			c.Ping(c.Ident.Nickname)
 		}
 	}
+
+	return nil
 }
 
 // Disconnect closes the client connection.
 func (c *Client) Disconnect() {
-	c.LogEntry().Debug("Client disconnected")
 	c.Connection.Close()
-}
-
-// parseIdent pulls identity parameters out of irc messages and stores them
-// in the client. This ident information is used to authenticate the client as a
-// user, not to authenticate the client with the network.
-func (c *Client) parseIdent(msg *irc.Message) {
-	switch msg.Command {
-	case "USER":
-		c.Ident.Username = msg.Params[0]
-		c.Ident.Realname = msg.Params[3]
-
-	case "NICK":
-		c.Ident.Nickname = msg.Params[0]
-
-	case "PASS":
-		c.Ident.Password = msg.Params[0]
-	}
 }
 
 // Ping sends a simple PING message to the client. See RFC 2812 § 3.7.2 for more

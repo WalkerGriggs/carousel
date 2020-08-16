@@ -31,6 +31,7 @@ var ClientCommandTable = CommandTable{
 	"USER": (*Client).user,
 	"NICK": (*Client).nick,
 	"PASS": (*Client).pass,
+	"QUIT": (*Client).quit,
 }
 
 // user pulls identity parameters out of the message and stores them in the
@@ -56,4 +57,12 @@ func (c *Client) nick(msg *irc.Message) (bool, error) {
 func (c *Client) pass(msg *irc.Message) (bool, error) {
 	c.Ident.Password = msg.Params[0]
 	return false, nil
+}
+
+// quit disconnects the client and returns an ErrDisconnected error which will
+// bubble up to the rungroup and cause all client-space routines (heartbeat,
+// router, etc) to return as well.
+func (c *Client) quit(msg *irc.Message) (bool, error) {
+	c.Disconnect()
+	return false, ErrDisconnected
 }

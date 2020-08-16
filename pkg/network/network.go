@@ -124,10 +124,11 @@ func (n *Network) pong(msg *irc.Message) {
 }
 
 // localReply relays welcome messages to the client.
-func (n *Network) localReply() {
+func (n *Network) localReply() error {
 	for _, msg := range n.ClientReplies {
 		n.Buffer <- msg
 	}
+	return nil
 }
 
 // isJoined checks checks if the network has already joined the give channel.

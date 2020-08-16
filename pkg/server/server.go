@@ -1,11 +1,13 @@
 package server
 
 import (
+	"context"
 	"net"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/walkergriggs/carousel/pkg/client"
+	"github.com/walkergriggs/carousel/pkg/rungroup"
 	"github.com/walkergriggs/carousel/pkg/server/router"
 	"github.com/walkergriggs/carousel/pkg/uri"
 	"github.com/walkergriggs/carousel/pkg/user"
@@ -65,13 +67,15 @@ func (s Server) Serve() {
 // and spawns the concurrent processess responsible to message passing between
 // the network and user.
 func (s Server) acceptConnection(conn net.Conn) {
-	done := make(chan bool)
+	clientGroup := rungroup.New(context.Background())
+
 	c, _ := client.New(client.Options{conn})
-	c.Listen(done)
+	clientGroup.Go(c.Listen)
+	clientGroup.Go(c.Heartbeat)
 
 	u, err := s.blockingAuthorizeClient(c)
 	if err != nil {
-		c.LogEntry().WithError(err).Error("Failed to authorize client.")
+		c.LogEntry().Error("Failed to authorize client.")
 		c.Disconnect()
 		return
 	}
@@ -84,5 +88,9 @@ func (s Server) acceptConnection(conn net.Conn) {
 
 	go u.Network.Listen()
 	go router.AttachClient()
-	go router.Route(done)
+	clientGroup.Go(router.Route)
+
+	if err := clientGroup.Wait(); err != nil {
+		log.Error(err)
+	}
 }
