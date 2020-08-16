@@ -40,52 +40,38 @@ func New(opts Options) (*Network, error) {
 }
 
 // Listen attempts to connect and listen if the Network isn't already connected.
-//
-// If the Network's Connection is nil when Listen is called, Listen will attempt to
-// connected the Network. If the connection fails, Listen logs an error and exits.
-func (n *Network) Listen() {
-	if n.Connection == nil {
-		n.LogEntry().Debug("Establishing connection")
-		n.Buffer = make(chan *irc.Message)
-
-		err := n.connect()
-		if err != nil {
-			n.LogEntry().WithError(err).Error("Failed to connect to network.")
-			return
-		}
-
-		go n.listen()
-	} else {
+// If the Network's Connection is nil, Listen reads parses, and forwards all
+// messages from the Network to the Client. In it's current state, this blocking
+// function should exit if the Network encounters an error when receiving
+// messages.
+func (n *Network) Listen() error {
+	if n.Connection != nil {
 		n.localReply()
+		return nil
 	}
-}
 
-// listen reads, parses, and forwards all mesages sent from the Network to the
-// Client. In it's current state, this blocking function should exit if the
-// Network encounters an error when receiving messages.
-func (n *Network) listen() {
-	n.LogEntry().Debug("Listening to network.")
+	n.Buffer = make(chan *irc.Message)
+	if err := n.connect(); err != nil {
+		n.LogEntry().WithError(err).Error("Failed to connect to network")
+		return err
+	}
+
 	for {
 		msg, err := n.Receive()
 		if err != nil {
-			n.LogEntry().WithError(err).Error("Failed to receive message.")
-			return
+			n.LogEntry().WithError(err).Error("Network failed to receive a message")
+			return err
 		}
 
-		hook := CommandTable[msg.Command]
-		if hook != nil {
-			send, err := hook(n, msg)
-			if err != nil {
-				n.LogEntry().WithError(err).Error(err.Error())
-			}
-
-			if !send {
-				continue
-			}
-
+		send, err := NetworkCommandTable.MaybeRun(n, msg)
+		if err != nil {
+			n.LogEntry().WithError(err).Error(err)
+			return err
 		}
 
-		n.Buffer <- msg
+		if send {
+			n.Buffer <- msg
+		}
 	}
 }
 

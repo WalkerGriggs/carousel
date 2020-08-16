@@ -8,12 +8,30 @@ import (
 	"github.com/walkergriggs/carousel/pkg/channel"
 )
 
+// CommandHook represents a function which should be run in response to an IRC
+// message. A CommandHook returns a boolean, and an error. The boolean is true
+// if the message should be intercepted or passed along.
 type CommandHook func(n *Network, msg *irc.Message) (bool, error)
+
+// CommandTable maps the command string to a CommandHook.
+type CommandTable map[string]CommandHook
+
+// MaybeRun wrap a given CommandTable and runs the given message's corresponding
+// hook. If the message command isn't a key in the CommandTable, it does nothing
+// and returns true.
+func (t CommandTable) MaybeRun(n *Network, msg *irc.Message) (bool, error) {
+	hook := t[msg.Command]
+	if hook == nil {
+		return true, nil
+	}
+
+	return hook(n, msg)
+}
 
 // CommandTable maps IRC to commands to hooks. Whenever the network receives a
 // message, it looks up the command in the CommandTable and runs the corresponding
 // function.
-var CommandTable = map[string]CommandHook{
+var NetworkCommandTable = CommandTable{
 	"001":  (*Network).rpl_welcome,
 	"002":  (*Network).rpl_welcome,
 	"003":  (*Network).rpl_welcome,
