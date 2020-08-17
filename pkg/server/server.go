@@ -68,7 +68,14 @@ func (s Server) acceptConnection(conn net.Conn) {
 	c, _ := client.New(client.Options{conn})
 	c.Listen(done)
 
-	u, err := s.blockingAuthorizeClient(c)
+	err := s.blockingAuthorizeClient(c)
+	if err != nil {
+		c.LogEntry().WithError(err).Error("Failed to authorize client.")
+		c.Disconnect()
+		return
+	}
+
+	n, err := s.clientNetwork(c)
 	if err != nil {
 		c.LogEntry().WithError(err).Error("Failed to authorize client.")
 		c.Disconnect()
@@ -78,10 +85,10 @@ func (s Server) acceptConnection(conn net.Conn) {
 	router := Router{
 		Server:  &s,
 		Client:  c,
-		Network: u.Network,
+		Network: n,
 	}
 
-	go u.Network.Listen()
+	go n.Listen()
 	go router.AttachClient()
 	go router.Route(done)
 }

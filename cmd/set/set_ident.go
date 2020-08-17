@@ -12,6 +12,7 @@ import (
 
 type CmdIdentOptions struct {
 	User     string
+	Network  string
 	Username string
 	Nickname string
 	Realname string
@@ -31,13 +32,15 @@ func NewCmdIdent(configAccess config.ConfigAccess) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&o.User, "user", "u", o.User, "User of network")
+	cmd.Flags().StringVarP(&o.User, "user", "", o.User, "Network's user")
+	cmd.Flags().StringVarP(&o.Network, "network", "", o.Network, "Network name")
 	cmd.Flags().StringVarP(&o.Username, "username", "s", o.Username, "Identity username")
 	cmd.Flags().StringVarP(&o.Nickname, "nickname", "n", o.Nickname, "Identity nickname")
 	cmd.Flags().StringVarP(&o.Realname, "realname", "r", o.Realname, "Identity realname")
 	cmd.Flags().StringVarP(&o.Password, "password", "p", o.Password, "Identity password")
 
 	cmd.MarkFlagRequired("user")
+	cmd.MarkFlagRequired("network")
 	cmd.MarkFlagRequired("nickname")
 
 	return cmd
@@ -67,11 +70,14 @@ func (o *CmdIdentOptions) Run(configAccess config.ConfigAccess) {
 	}
 
 	for _, user := range startingConfig.Users {
-		if user.Username == o.User {
-			user.Network.Ident = ident
-			config.ModifyFile(configAccess, *startingConfig)
-			return
+		n, err := user.GetNetwork(o.Network)
+		if err != nil {
+			log.Fatal(err)
 		}
+
+		n.Ident = ident
+		config.ModifyFile(configAccess, *startingConfig)
+		return
 	}
 
 	log.Fatal(fmt.Errorf("User %s not found.\n", o.Username))
