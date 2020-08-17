@@ -32,14 +32,14 @@ func (t CommandTable) MaybeRun(n *Network, msg *irc.Message) (bool, error) {
 // message, it looks up the command in the CommandTable and runs the corresponding
 // function.
 var NetworkCommandTable = CommandTable{
-	"001":  (*Network).rpl_welcome,
-	"002":  (*Network).rpl_welcome,
-	"003":  (*Network).rpl_welcome,
-	"004":  (*Network).rpl_welcome,
-	"005":  (*Network).rpl_welcome,
-	"PING": (*Network).ping,
-	"JOIN": (*Network).join,
-	"353":  (*Network).rpl_namreply,
+	irc.PING:         (*Network).ping,
+	irc.JOIN:         (*Network).join,
+	irc.RPL_WELCOME:  (*Network).rpl_welcome,
+	irc.RPL_YOURHOST: (*Network).rpl_welcome,
+	irc.RPL_CREATED:  (*Network).rpl_welcome,
+	irc.RPL_MYINFO:   (*Network).rpl_welcome,
+	irc.RPL_BOUNCE:   (*Network).rpl_welcome,
+	irc.RPL_NAMREPLY: (*Network).rpl_namreply,
 }
 
 // ping responds to the network with a pong.

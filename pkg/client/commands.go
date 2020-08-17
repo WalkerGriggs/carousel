@@ -28,10 +28,10 @@ func (t CommandTable) MaybeRun(n *Client, msg *irc.Message) (bool, error) {
 // message, it looks up the command in the CommandTable and runs the corresponding
 // function.
 var ClientCommandTable = CommandTable{
-	"USER": (*Client).user,
-	"NICK": (*Client).nick,
-	"PASS": (*Client).pass,
-	"QUIT": (*Client).quit,
+	irc.USER: (*Client).user,
+	irc.NICK: (*Client).nick,
+	irc.PASS: (*Client).pass,
+	irc.QUIT: (*Client).quit,
 }
 
 // user pulls identity parameters out of the message and stores them in the
