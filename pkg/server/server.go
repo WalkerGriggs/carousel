@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/walkergriggs/carousel/pkg/client"
+	"github.com/walkergriggs/carousel/pkg/server/router"
 	"github.com/walkergriggs/carousel/pkg/uri"
 	"github.com/walkergriggs/carousel/pkg/user"
 )
@@ -75,10 +76,10 @@ func (s Server) acceptConnection(conn net.Conn) {
 		return
 	}
 
-	router := Router{
-		Server:  &s,
-		Client:  c,
-		Network: u.Network,
+	router := router.Router{
+		Client:    c,
+		Network:   u.Network,
+		ServerURI: &s.URI,
 	}
 
 	go u.Network.Listen()

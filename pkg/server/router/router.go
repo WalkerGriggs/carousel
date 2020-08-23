@@ -1,16 +1,17 @@
-package server
+package router
 
 import (
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/client"
 	"github.com/walkergriggs/carousel/pkg/network"
+	"github.com/walkergriggs/carousel/pkg/uri"
 )
 
 type Router struct {
-	Server  *Server
-	Client  *client.Client
-	Network *network.Network
+	ServerURI *uri.URI
+	Client    *client.Client
+	Network   *network.Network
 }
 
 // Route passes messages from the given Network buffer to the Client buffer, and
@@ -74,7 +75,7 @@ func (r *Router) joinChannels() error {
 	prefix := &irc.Prefix{
 		Name: r.Client.Ident.Nickname,
 		User: r.Client.Ident.Username,
-		Host: r.Server.URI.Host,
+		Host: r.ServerURI.Host,
 	}
 
 	var messages []*irc.Message
