@@ -1,6 +1,9 @@
 package client
 
 import (
+	"fmt"
+	"strings"
+
 	"gopkg.in/sorcix/irc.v2"
 )
 
@@ -32,6 +35,7 @@ var ClientCommandTable = CommandTable{
 	irc.NICK: (*Client).nick,
 	irc.PASS: (*Client).pass,
 	irc.QUIT: (*Client).quit,
+	irc.CAP:  (*Client).cap,
 }
 
 // user pulls identity parameters out of the message and stores them in the
@@ -55,7 +59,14 @@ func (c *Client) nick(msg *irc.Message) (bool, error) {
 // client. This ident is used to authenticate the client as a user, and should
 // not be passed to the network.
 func (c *Client) pass(msg *irc.Message) (bool, error) {
-	c.Ident.Password = msg.Params[0]
+	pass := msg.Params[0]
+
+	if strings.Contains(pass, ":") {
+		split := strings.Split(pass, ":")
+		pass = split[len(split)-1]
+	}
+
+	c.Ident.Password = pass
 	return false, nil
 }
 
@@ -65,4 +76,21 @@ func (c *Client) pass(msg *irc.Message) (bool, error) {
 func (c *Client) quit(msg *irc.Message) (bool, error) {
 	c.Disconnect()
 	return false, ErrDisconnected
+}
+
+func (c *Client) cap(msg *irc.Message) (bool, error) {
+	switch msg.Params[0] {
+	case irc.CAP_LS:
+		err := c.Send(&irc.Message{
+			Command: "CAP",
+			Params:  []string{"*", "LS"},
+		})
+		return false, err
+
+	case irc.CAP_END:
+		return false, nil
+
+	default:
+		return false, fmt.Errorf("CAP subcommand %s not supported", msg.Params[0])
+	}
 }
