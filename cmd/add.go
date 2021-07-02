@@ -1,11 +1,8 @@
-package add
+package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
 	"github.com/walkergriggs/carousel/cmd/config"
-	"github.com/walkergriggs/carousel/pkg/server"
 )
 
 func NewCmdAdd(configAccess config.ConfigAccess) *cobra.Command {
@@ -19,15 +16,4 @@ func NewCmdAdd(configAccess config.ConfigAccess) *cobra.Command {
 	cmd.AddCommand(NewCmdNetwork(configAccess))
 
 	return cmd
-}
-
-func unmarshalConfig() (*server.Server, error) {
-	var s server.Server
-
-	err := viper.Unmarshal(&s)
-	if err != nil {
-		return nil, err
-	}
-
-	return &s, nil
 }

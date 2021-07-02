@@ -9,11 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"github.com/walkergriggs/carousel/cmd/add"
 	"github.com/walkergriggs/carousel/cmd/config"
-	"github.com/walkergriggs/carousel/cmd/generate"
-	"github.com/walkergriggs/carousel/cmd/serve"
-	"github.com/walkergriggs/carousel/cmd/set"
 	"github.com/walkergriggs/carousel/pkg/server"
 )
 
@@ -42,10 +38,10 @@ func init() {
 	}
 
 	cobra.OnInitialize(initConfig)
-	rootCmd.AddCommand(add.NewCmdAdd(pathOptions))
-	rootCmd.AddCommand(set.NewCmdSet(pathOptions))
-	rootCmd.AddCommand(serve.NewCmdServe(pathOptions))
-	rootCmd.AddCommand(generate.NewCmdGenerate(pathOptions))
+	rootCmd.AddCommand(NewCmdAdd(pathOptions))
+	rootCmd.AddCommand(NewCmdSet(pathOptions))
+	rootCmd.AddCommand(NewCmdServe(pathOptions))
+	rootCmd.AddCommand(NewCmdGenerate(pathOptions))
 }
 
 func globalPath() (string, error) {
