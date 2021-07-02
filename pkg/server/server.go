@@ -9,33 +9,21 @@ import (
 	"github.com/walkergriggs/carousel/pkg/client"
 	"github.com/walkergriggs/carousel/pkg/rungroup"
 	"github.com/walkergriggs/carousel/pkg/server/router"
-	"github.com/walkergriggs/carousel/pkg/uri"
 	"github.com/walkergriggs/carousel/pkg/user"
 )
-
-type Options struct {
-	URI             uri.URI
-	Users           []*user.User
-	SSLEnabled      bool
-	CertificatePath string
-}
 
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	URI             uri.URI      `json:"uri"`
-	Users           []*user.User `json:"users"`
-	SSLEnabled      bool         `json:"sslEnabled"`
-	CertificatePath string       `json:"certificatePath"`
-	Listener        net.Listener `json:",omitempty"`
+	config *Config
+	users  []*user.User
+	// listener net.Listener
 }
 
-func New(opts Options) (*Server, error) {
+func New(config *Config) (*Server, error) {
 	return &Server{
-		URI:             opts.URI,
-		Users:           opts.Users,
-		SSLEnabled:      opts.SSLEnabled,
-		CertificatePath: opts.CertificatePath,
+		config: config,
+		users:  config.Users,
 	}, nil
 }
 
@@ -44,7 +32,7 @@ func New(opts Options) (*Server, error) {
 // only return if the TCP listener closes or errors (even if there are no active
 // connections).
 func (s Server) Serve() {
-	log.Info("Listening at ", s.URI.String())
+	log.Info("Listening at ", s.config.URI)
 
 	l, err := s.listener()
 	if err != nil {
@@ -83,7 +71,7 @@ func (s Server) acceptConnection(conn net.Conn) {
 	router := router.Router{
 		Client:    c,
 		Network:   u.Network,
-		ServerURI: &s.URI,
+		ServerURI: s.config.URI,
 	}
 
 	go u.Network.Listen()

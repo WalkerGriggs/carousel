@@ -13,6 +13,7 @@ func NewCmdGenerate(configAccess config.ConfigAccess) *cobra.Command {
 	}
 
 	cmd.AddCommand(NewCmdKey(configAccess))
+	cmd.AddCommand(NewCmdGenerateConfig(configAccess))
 
 	return cmd
 }

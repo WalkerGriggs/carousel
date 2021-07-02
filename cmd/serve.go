@@ -6,7 +6,6 @@ import (
 
 	"github.com/walkergriggs/carousel/cmd/config"
 	"github.com/walkergriggs/carousel/pkg/server"
-	"github.com/walkergriggs/carousel/pkg/uri"
 )
 
 type CmdServeOptions struct {
@@ -46,17 +45,12 @@ func (o *CmdServeOptions) Run(configAccess config.ConfigAccess) {
 		log.Fatal(err)
 	}
 
-	opts := server.Options{
-		Users:           startingConfig.Users,
-		CertificatePath: startingConfig.CertificatePath,
-		SSLEnabled:      o.SSL,
-		URI: uri.URI{
-			Host: o.Host,
-			Port: o.Port,
-		},
+	serverConfig, err := config.ConvertServerConfig(startingConfig)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	s, err := server.New(opts)
+	s, err := server.New(serverConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

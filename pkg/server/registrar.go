@@ -46,7 +46,7 @@ func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
 // username. It returns an error if the user does not exist. This function is
 // only a helper until a better User storage solution is implemented.
 func (s Server) GetUser(username string) (*user.User, error) {
-	for _, user := range s.Users {
+	for _, user := range s.users {
 		if username == user.Username {
 			return user, nil
 		}

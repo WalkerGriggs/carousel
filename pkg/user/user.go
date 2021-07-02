@@ -9,27 +9,22 @@ import (
 	"github.com/walkergriggs/carousel/pkg/network"
 )
 
-type Options struct {
-	Username string
-	Password string
-	Network  *network.Network
-}
-
 // User represents the individual Users's account and network config. Currently,
 // a user can only connect to a single network, and each user owns their own
 // router to pass messages.
 type User struct {
+	Config   *Config
 	Username string           `json:"username"`
 	Password string           `json:"password"`
 	Network  *network.Network `json:"network,omitempty"`
 	Client   *client.Client   `json:",omitempty"`
 }
 
-func New(opts Options) (*User, error) {
+func New(config *Config) (*User, error) {
 	return &User{
-		Username: opts.Username,
-		Password: opts.Password,
-		Network:  opts.Network,
+		Username: config.Username,
+		Password: config.Password,
+		Network:  config.Network,
 	}, nil
 }
 

@@ -5,20 +5,14 @@ import (
 
 	"github.com/walkergriggs/carousel/pkg/channel"
 	"github.com/walkergriggs/carousel/pkg/identity"
-	"github.com/walkergriggs/carousel/pkg/uri"
 )
-
-type Options struct {
-	Name  string
-	URI   uri.URI
-	Ident *identity.Identity
-}
 
 // Network represents an IRC network. Each network has a URI, and, because Users
 // own the Network object, each Network stores the User's Identity as well.
 type Network struct {
+	Config   *Config
 	Name     string             `json:"name"`
-	URI      uri.URI            `json:"uri"`
+	URI      string             `json:"uri"`
 	Ident    *identity.Identity `json:"ident,omitempty"`
 	Channels []*channel.Channel `json:",omitempty"`
 
@@ -27,14 +21,15 @@ type Network struct {
 	ClientReplies []*irc.Message    `json:"-,omitempty"`
 }
 
-// New takes in Network Options and returns a new Network object. In this case,
-// all options are manadatory, but, in its current state, New doesn't throw any
+// New takes in a Network Config and returns a new Network object. In this case,
+// all configs are manadatory, but, in its current state, New doesn't throw any
 // errors.
-func New(opts Options) (*Network, error) {
+func New(config *Config) (*Network, error) {
 	return &Network{
-		Name:   opts.Name,
-		URI:    opts.URI,
-		Ident:  opts.Ident,
+		Config: config,
+		Name:   config.Name,
+		URI:    config.URI,
+		Ident:  config.Ident,
 		Buffer: make(chan *irc.Message),
 	}, nil
 }
@@ -78,7 +73,7 @@ func (n *Network) Listen() error {
 // connect dials the network and identifies. If the dial throws an error,
 // connect short circuits -- handle this accordingly.
 func (n *Network) connect() error {
-	conn, err := irc.Dial(n.URI.String())
+	conn, err := irc.Dial(n.URI)
 	if err != nil {
 		return err
 	}

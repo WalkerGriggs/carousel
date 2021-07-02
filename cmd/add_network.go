@@ -7,8 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/walkergriggs/carousel/cmd/config"
-	"github.com/walkergriggs/carousel/pkg/network"
-	"github.com/walkergriggs/carousel/pkg/uri"
 )
 
 type CmdNetworkOptions struct {
@@ -51,17 +49,14 @@ func (o *CmdNetworkOptions) Run(configAccess config.ConfigAccess) {
 		log.Fatal(err)
 	}
 
-	net := &network.Network{
+	networkConfig := &config.NetworkConfig{
 		Name: o.Name,
-		URI: uri.URI{
-			Host: o.Address,
-			Port: o.Port,
-		},
+		URI:  fmt.Sprintf("%s:%s", o.Address, o.Port),
 	}
 
 	for _, user := range startingConfig.Users {
 		if user.Username == o.User {
-			user.Network = net
+			user.Network = networkConfig
 			config.ModifyFile(configAccess, *startingConfig)
 			return
 		}

@@ -2,16 +2,16 @@ package router
 
 import (
 	"context"
+	"net/url"
 
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/client"
 	"github.com/walkergriggs/carousel/pkg/network"
-	"github.com/walkergriggs/carousel/pkg/uri"
 )
 
 type Router struct {
-	ServerURI *uri.URI
+	ServerURI string
 	Client    *client.Client
 	Network   *network.Network
 }
@@ -76,10 +76,15 @@ func (r *Router) setIdent() {
 // joinChannel sends a join reply, followed by the names list directly to the
 // the client. This should only be used directly after the client connects.
 func (r *Router) joinChannels() error {
+	u, err := url.Parse(r.ServerURI)
+	if err != nil {
+		return err
+	}
+
 	prefix := &irc.Prefix{
 		Name: r.Client.Ident.Nickname,
 		User: r.Client.Ident.Username,
-		Host: r.ServerURI.Host,
+		Host: u.Host,
 	}
 
 	var messages []*irc.Message

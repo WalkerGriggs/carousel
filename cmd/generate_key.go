@@ -65,6 +65,6 @@ func (o *CmdKeyOptions) Run(configAccess config.ConfigAccess) {
 		log.Fatal(err)
 	}
 
-	startingConfig.CertificatePath = path
+	startingConfig.Server.CertificatePath = path
 	config.ModifyFile(configAccess, *startingConfig)
 }

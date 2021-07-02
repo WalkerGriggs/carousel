@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/walkergriggs/carousel/cmd/config"
-	"github.com/walkergriggs/carousel/pkg/identity"
 )
 
 type CmdIdentOptions struct {
@@ -59,7 +58,7 @@ func (o *CmdIdentOptions) Run(configAccess config.ConfigAccess) {
 		log.Fatal(err)
 	}
 
-	ident := &identity.Identity{
+	ident := &config.IdentityConfig{
 		Username: o.Username,
 		Nickname: o.Nickname,
 		Realname: o.Realname,

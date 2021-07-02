@@ -6,7 +6,6 @@ import (
 
 	"github.com/walkergriggs/carousel/cmd/config"
 	"github.com/walkergriggs/carousel/pkg/crypto/phash"
-	"github.com/walkergriggs/carousel/pkg/user"
 )
 
 type CmdUserOptions struct {
@@ -48,7 +47,7 @@ func (o *CmdUserOptions) Run(configAccess config.ConfigAccess) {
 		log.Fatal(err)
 	}
 
-	u := &user.User{
+	u := &config.UserConfig{
 		Username: o.Username,
 		Password: pass,
 	}
