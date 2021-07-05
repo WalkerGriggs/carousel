@@ -26,7 +26,7 @@ type ServerConfig struct {
 type UserConfig struct {
 	Username string
 	Password string
-	Network  *NetworkConfig
+	Networks []*NetworkConfig
 }
 
 type NetworkConfig struct {
@@ -48,9 +48,11 @@ func EmptyConfig() *Config {
 		Server: &ServerConfig{},
 		Users: []*UserConfig{
 			{
-				Network: &NetworkConfig{
-					Ident:    &IdentityConfig{},
-					Channels: []string{},
+				Networks: []*NetworkConfig{
+					{
+						Ident:    &IdentityConfig{},
+						Channels: []string{},
+					},
 				},
 			},
 		},
@@ -82,20 +84,24 @@ func ConvertServerConfig(raw *Config) (*server.Config, error) {
 }
 
 func ConvertUserConfig(raw *UserConfig) (*user.Config, error) {
-	networkConfig, err := ConvertNetworkConfig(raw.Network)
-	if err != nil {
-		return nil, err
-	}
+	networks := make([]*network.Network, len(raw.Networks))
 
-	network, err := network.New(networkConfig)
-	if err != nil {
-		return nil, err
+	for i, rawNetwork := range raw.Networks {
+		config, err := ConvertNetworkConfig(rawNetwork)
+		if err != nil {
+			return nil, err
+		}
+
+		networks[i], err = network.New(config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &user.Config{
 		Username: raw.Username,
 		Password: raw.Password,
-		Network:  network,
+		Networks: networks,
 	}, nil
 }
 

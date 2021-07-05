@@ -14,17 +14,17 @@ import (
 // router to pass messages.
 type User struct {
 	Config   *Config
-	Username string           `json:"username"`
-	Password string           `json:"password"`
-	Network  *network.Network `json:"network,omitempty"`
-	Client   *client.Client   `json:",omitempty"`
+	Username string             `json:"username"`
+	Password string             `json:"password"`
+	Networks []*network.Network `json:"network,omitempty"`
+	Client   *client.Client     `json:",omitempty"`
 }
 
 func New(config *Config) (*User, error) {
 	return &User{
 		Username: config.Username,
 		Password: config.Password,
-		Network:  config.Network,
+		Networks: config.Networks,
 	}, nil
 }
 
@@ -34,6 +34,30 @@ func New(config *Config) (*User, error) {
 func (u *User) Authorize(ident identity.Identity) error {
 	if !phash.HashesMatch(u.Password, ident.Password) {
 		return fmt.Errorf("Authorization for user %s failed.", ident.Username)
+	}
+	return nil
+}
+
+// NetworkOrDefault, like Network, returns the network with matching name or
+// returns nil if no match if found. If the given string is empty, however, it
+// returns the default network (for now, the default is the first in a non-empty
+// network list.
+func (u *User) NetworkOrDefault(name string) (n *network.Network) {
+	if name != "" {
+		n = u.Network(name)
+	} else if len(u.Networks) >= 1 {
+		n = u.Networks[0]
+	}
+	return
+}
+
+// Network returns the network object with matching name, and returns nil if no
+// match is found.
+func (u *User) Network(name string) *network.Network {
+	for _, net := range u.Networks {
+		if net.Name == name {
+			return net
+		}
 	}
 	return nil
 }

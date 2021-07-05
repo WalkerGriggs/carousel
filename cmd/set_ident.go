@@ -11,6 +11,7 @@ import (
 
 type CmdIdentOptions struct {
 	User     string
+	Network  string
 	Username string
 	Nickname string
 	Realname string
@@ -21,7 +22,7 @@ func NewCmdIdent(configAccess config.ConfigAccess) *cobra.Command {
 	o := &CmdIdentOptions{}
 
 	cmd := &cobra.Command{
-		Use:                   "ident (--user) (--nickname) [--username] [--realname] [--password]",
+		Use:                   "ident (--user) (--nickname) (--network) [--username] [--realname] [--password]",
 		DisableFlagsInUseLine: true,
 		Short:                 "Sets the identity of a user's network",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -31,6 +32,7 @@ func NewCmdIdent(configAccess config.ConfigAccess) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&o.User, "user", "u", o.User, "User of network")
+	cmd.Flags().StringVarP(&o.Network, "network", "e", o.Network, "Target network")
 	cmd.Flags().StringVarP(&o.Username, "username", "s", o.Username, "Identity username")
 	cmd.Flags().StringVarP(&o.Nickname, "nickname", "n", o.Nickname, "Identity nickname")
 	cmd.Flags().StringVarP(&o.Realname, "realname", "r", o.Realname, "Identity realname")
@@ -38,6 +40,7 @@ func NewCmdIdent(configAccess config.ConfigAccess) *cobra.Command {
 
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("nickname")
+	cmd.MarkFlagRequired("network")
 
 	return cmd
 }
@@ -67,9 +70,13 @@ func (o *CmdIdentOptions) Run(configAccess config.ConfigAccess) {
 
 	for _, user := range startingConfig.Users {
 		if user.Username == o.User {
-			user.Network.Ident = ident
-			config.ModifyFile(configAccess, *startingConfig)
-			return
+			for _, net := range user.Networks {
+				if net.Name == o.Network {
+					net.Ident = ident
+					config.ModifyFile(configAccess, *startingConfig)
+					return
+				}
+			}
 		}
 	}
 

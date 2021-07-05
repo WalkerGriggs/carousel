@@ -56,7 +56,7 @@ func (o *CmdNetworkOptions) Run(configAccess config.ConfigAccess) {
 
 	for _, user := range startingConfig.Users {
 		if user.Username == o.User {
-			user.Network = networkConfig
+			user.Networks = append(user.Networks, networkConfig)
 			config.ModifyFile(configAccess, *startingConfig)
 			return
 		}

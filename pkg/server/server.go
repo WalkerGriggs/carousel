@@ -68,13 +68,15 @@ func (s Server) acceptConnection(conn net.Conn) {
 		return
 	}
 
+	network := u.NetworkOrDefault(c.Ident.ParsedNetwork())
+
 	router := router.Router{
 		Client:    c,
-		Network:   u.Network,
+		Network:   network,
 		ServerURI: s.config.URI,
 	}
 
-	go u.Network.Listen()
+	go network.Listen()
 	go router.AttachClient()
 	clientGroup.Go(router.Route)
 

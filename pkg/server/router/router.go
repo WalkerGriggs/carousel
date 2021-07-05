@@ -76,7 +76,7 @@ func (r *Router) setIdent() {
 // joinChannel sends a join reply, followed by the names list directly to the
 // the client. This should only be used directly after the client connects.
 func (r *Router) joinChannels() error {
-	u, err := url.Parse(r.ServerURI)
+	u, err := url.Parse("//" + r.ServerURI)
 	if err != nil {
 		return err
 	}

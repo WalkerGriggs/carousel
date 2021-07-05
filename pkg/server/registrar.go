@@ -23,7 +23,7 @@ func (s Server) blockingAuthorizeClient(c *client.Client) (*user.User, error) {
 // an error if provided user does not exist or if the password provided does not
 // match the file on record. It returns the user if the credentials are correct.
 func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
-	u, err := s.GetUser(c.Ident.Username)
+	u, err := s.GetUser(c.Ident.ParsedUsername())
 	if err != nil {
 		return u, err
 	}

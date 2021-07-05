@@ -7,5 +7,5 @@ import (
 type Config struct {
 	Username string
 	Password string
-	Network  *network.Network
+	Networks []*network.Network
 }

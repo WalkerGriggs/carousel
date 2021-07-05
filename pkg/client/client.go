@@ -9,7 +9,6 @@ import (
 	"gopkg.in/sorcix/irc.v2"
 
 	"github.com/walkergriggs/carousel/pkg/identity"
-	"github.com/walkergriggs/carousel/pkg/network"
 )
 
 type Options struct {
@@ -23,7 +22,6 @@ type Client struct {
 	Connection net.Conn           `json:",omitempty"`
 	Buffer     chan *irc.Message  `json:",omitempty"`
 	Ident      *identity.Identity `json:",omitempty"`
-	Network    *network.Network   `json:",omitempty"`
 
 	Encoder *irc.Encoder  `json:",omitempty"`
 	Decoder *irc.Decoder  `json:",omitempty"`
