@@ -1,4 +1,4 @@
-package server
+package carousel
 
 import (
 	"crypto/tls"

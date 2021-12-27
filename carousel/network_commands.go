@@ -1,37 +1,15 @@
-package network
+package carousel
 
 import (
 	"fmt"
 
 	"gopkg.in/sorcix/irc.v2"
-
-	"github.com/walkergriggs/carousel/pkg/channel"
 )
 
-// CommandHook represents a function which should be run in response to an IRC
-// message. A CommandHook returns a boolean, and an error. The boolean is true
-// if the message should be intercepted or passed along.
-type CommandHook func(n *Network, msg *irc.Message) (bool, error)
-
-// CommandTable maps the command string to a CommandHook.
-type CommandTable map[string]CommandHook
-
-// MaybeRun wrap a given CommandTable and runs the given message's corresponding
-// hook. If the message command isn't a key in the CommandTable, it does nothing
-// and returns true.
-func (t CommandTable) MaybeRun(n *Network, msg *irc.Message) (bool, error) {
-	hook := t[msg.Command]
-	if hook == nil {
-		return true, nil
-	}
-
-	return hook(n, msg)
-}
-
-// CommandTable maps IRC to commands to hooks. Whenever the network receives a
-// message, it looks up the command in the CommandTable and runs the corresponding
-// function.
-var NetworkCommandTable = CommandTable{
+// NetworkCommandTable maps IRC to commands to hooks. Whenever the client
+// receives a message, it looks up the command in the CommandTable and runs the
+// corresponding function.
+var NetworkCommandTable = map[string]NetworkCommandHook{
 	irc.PING:         (*Network).ping,
 	irc.JOIN:         (*Network).join,
 	irc.RPL_WELCOME:  (*Network).rpl_welcome,
@@ -40,6 +18,19 @@ var NetworkCommandTable = CommandTable{
 	irc.RPL_MYINFO:   (*Network).rpl_welcome,
 	irc.RPL_BOUNCE:   (*Network).rpl_welcome,
 	irc.RPL_NAMREPLY: (*Network).rpl_namreply,
+}
+
+type NetworkCommandHook func(n *Network, msg *irc.Message) (bool, error)
+
+// CommandTable maps IRC to commands to hooks. Whenever the network receives a
+// message, it looks up the command in the CommandTable and runs the corresponding
+// function.
+func (n *Network) MaybeRun(msg *irc.Message) (bool, error) {
+	hook, ok := NetworkCommandTable[msg.Command]
+	if !ok {
+		return true, nil
+	}
+	return hook(n, msg)
 }
 
 // ping responds to the network with a pong.
@@ -52,7 +43,7 @@ func (n *Network) ping(msg *irc.Message) (bool, error) {
 func (n *Network) join(msg *irc.Message) (bool, error) {
 	name := msg.Params[0]
 	if !n.isJoined(name) {
-		channel, _ := channel.New(name)
+		channel, _ := NewChannel(name)
 		n.Channels = append(n.Channels, channel)
 	}
 	return true, nil

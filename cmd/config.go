@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"github.com/spf13/viper"
-	"github.com/walkergriggs/carousel/pkg/server"
+
+	"github.com/walkergriggs/carousel/carousel"
 )
 
-func unmarshalConfig() (*server.Server, error) {
-	var s server.Server
+func unmarshalConfig() (*carousel.Server, error) {
+	var s carousel.Server
 
 	err := viper.Unmarshal(&s)
 	if err != nil {

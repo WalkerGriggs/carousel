@@ -1,19 +1,16 @@
-package router
+package carousel
 
 import (
 	"context"
 	"net/url"
 
 	"gopkg.in/sorcix/irc.v2"
-
-	"github.com/walkergriggs/carousel/pkg/client"
-	"github.com/walkergriggs/carousel/pkg/network"
 )
 
 type Router struct {
 	ServerURI string
-	Client    *client.Client
-	Network   *network.Network
+	Client    *Client
+	Network   *Network
 }
 
 // Route passes messages from the given Network buffer to the Client buffer, and
@@ -42,9 +39,9 @@ func (r *Router) Route(ctx context.Context) error {
 	}
 }
 
-// AttachClient should run after a client first connects and authenticates. It
+// attachClient should run after a client first connects and authenticates. It
 // joins channels, sets ident, and performs general post-connection tasks.
-func (r *Router) AttachClient() {
+func (r *Router) attachClient() {
 	r.setIdent()
 
 	if err := r.joinChannels(); err != nil {
@@ -52,11 +49,11 @@ func (r *Router) AttachClient() {
 	}
 }
 
-// DetachClient should run before a client disconnects. Specifically, it parts
+// detachClient should run before a client disconnects. Specifically, it parts
 // from all channels. The network should stay attached to the channels even after
 // the client disconnects, so this messages should be sent directly from the server
 // to the client.
-func (r *Router) DetachClient() error {
+func (r *Router) detachClient() error {
 	var messages []*irc.Message
 
 	for _, channel := range r.Network.Channels {

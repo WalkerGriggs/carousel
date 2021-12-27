@@ -1,4 +1,4 @@
-package connection
+package carousel
 
 import (
 	"gopkg.in/sorcix/irc.v2"

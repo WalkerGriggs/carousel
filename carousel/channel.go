@@ -1,11 +1,11 @@
-package channel
+package carousel
 
 type Channel struct {
 	Name  string   `json:",omitempty"`
 	Nicks []string `json:",omitempty"`
 }
 
-func New(name string) (*Channel, error) {
+func NewChannel(name string) (*Channel, error) {
 	return &Channel{
 		Name:  name,
 		Nicks: make([]string, 1),
