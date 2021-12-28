@@ -1,17 +1,17 @@
-package client
+package carousel
 
 import (
 	"bufio"
 	"context"
 	"net"
+	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
-
-	"github.com/walkergriggs/carousel/pkg/identity"
 )
 
-type Options struct {
+type ClientConfig struct {
 	Connection net.Conn
 }
 
@@ -19,25 +19,25 @@ type Options struct {
 // Unlike Network which represents both the Connection and metadata, Client
 // is seperate from User so it can run independetly before identifying itself.
 type Client struct {
-	Connection net.Conn           `json:",omitempty"`
-	Buffer     chan *irc.Message  `json:",omitempty"`
-	Ident      *identity.Identity `json:",omitempty"`
+	Connection net.Conn          `json:",omitempty"`
+	Buffer     chan *irc.Message `json:",omitempty"`
+	Ident      *Identity         `json:",omitempty"`
 
 	Encoder *irc.Encoder  `json:",omitempty"`
 	Decoder *irc.Decoder  `json:",omitempty"`
 	Reader  *bufio.Reader `json:",omitempty"`
 }
 
-// New takes in Client Options and returns a new Client object.
-func New(opts Options) (*Client, error) {
+// New takes in a ClientConfig and returns a new Client object.
+func NewClient(config ClientConfig) (*Client, error) {
 	return &Client{
-		Connection: opts.Connection,
+		Connection: config.Connection,
 		Buffer:     make(chan *irc.Message),
-		Ident:      new(identity.Identity),
+		Ident:      new(Identity),
 
-		Encoder: irc.NewEncoder(opts.Connection),
-		Decoder: irc.NewDecoder(opts.Connection),
-		Reader:  bufio.NewReader(opts.Connection),
+		Encoder: irc.NewEncoder(config.Connection),
+		Decoder: irc.NewDecoder(config.Connection),
+		Reader:  bufio.NewReader(config.Connection),
 	}, nil
 }
 
@@ -61,7 +61,7 @@ func (c *Client) Listen(ctx context.Context) error {
 				return err
 			}
 
-			send, err := ClientCommandTable.MaybeRun(c, msg)
+			send, err := c.MaybeRun(msg)
 			if err != nil {
 				return err
 			} else if send {
@@ -103,4 +103,38 @@ func (c *Client) Ping(nickname string) {
 		Command: "PING",
 		Params:  []string{nickname},
 	})
+}
+
+func (c *Client) Send(msg *irc.Message) error {
+	_, err := c.Connection.Write([]byte(msg.String() + "\n"))
+	return err
+}
+
+func (c *Client) Receive() (*irc.Message, error) {
+	msg, err := c.Reader.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+
+	msg = strings.TrimSpace(string(msg))
+	return irc.ParseMessage(msg), nil
+}
+
+func (c *Client) BatchSend(messages []*irc.Message) error {
+	for _, msg := range messages {
+		if err := c.Send(msg); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Client) LogEntry() *log.Entry {
+	return log.WithFields(c.LogFields())
+}
+
+func (c *Client) LogFields() log.Fields {
+	return log.Fields{
+		"RemoteAddress": c.Connection.RemoteAddr().String,
+	}
 }

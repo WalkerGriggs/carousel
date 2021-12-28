@@ -1,4 +1,4 @@
-package server
+package carousel
 
 import (
 	"context"
@@ -6,21 +6,24 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/walkergriggs/carousel/pkg/client"
 	"github.com/walkergriggs/carousel/pkg/rungroup"
-	"github.com/walkergriggs/carousel/pkg/server/router"
-	"github.com/walkergriggs/carousel/pkg/user"
 )
+
+type ServerConfig struct {
+	URI             string
+	Users           []*User
+	SSLEnabled      bool
+	CertificatePath string
+}
 
 // Server is the configuration for all of Carousel. It maintains a list of all
 // Users, as well general server information (ie. URI).
 type Server struct {
-	config *Config
-	users  []*user.User
-	// listener net.Listener
+	config *ServerConfig
+	users  []*User
 }
 
-func New(config *Config) (*Server, error) {
+func NewServer(config *ServerConfig) (*Server, error) {
 	return &Server{
 		config: config,
 		users:  config.Users,
@@ -57,7 +60,7 @@ func (s Server) Serve() {
 func (s Server) acceptConnection(conn net.Conn) {
 	clientGroup := rungroup.New(context.Background())
 
-	c, _ := client.New(client.Options{conn})
+	c, _ := NewClient(ClientConfig{conn})
 	clientGroup.Go(c.Listen)
 	clientGroup.Go(c.Heartbeat)
 
@@ -70,14 +73,14 @@ func (s Server) acceptConnection(conn net.Conn) {
 
 	network := u.NetworkOrDefault(c.Ident.ParsedNetwork())
 
-	router := router.Router{
+	router := Router{
 		Client:    c,
 		Network:   network,
 		ServerURI: s.config.URI,
 	}
 
 	go network.Listen()
-	go router.AttachClient()
+	go router.attachClient()
 	clientGroup.Go(router.Route)
 
 	if err := clientGroup.Wait(); err != nil {

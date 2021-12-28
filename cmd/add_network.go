@@ -24,6 +24,10 @@ func NewCmdNetwork(configAccess config.ConfigAccess) *cobra.Command {
 		DisableFlagsInUseLine: true,
 		Short:                 "Adds network to user",
 		Run: func(cmd *cobra.Command, args []string) {
+			if err := o.Validate(cmd, args); err != nil {
+				panic(err)
+			}
+
 			o.Complete(cmd, args)
 			o.Run(configAccess)
 		},
@@ -37,6 +41,12 @@ func NewCmdNetwork(configAccess config.ConfigAccess) *cobra.Command {
 	cmd.MarkFlagRequired("address")
 
 	return cmd
+}
+
+func (o *CmdNetworkOptions) Validate(cmd *cobra.Command, args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("First argument must be the network name")
+	}
 }
 
 func (o *CmdNetworkOptions) Complete(cmd *cobra.Command, args []string) {

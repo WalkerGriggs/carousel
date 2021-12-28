@@ -4,8 +4,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/walkergriggs/carousel/carousel"
 	"github.com/walkergriggs/carousel/cmd/config"
-	"github.com/walkergriggs/carousel/pkg/server"
 )
 
 type CmdServeOptions struct {
@@ -50,7 +50,7 @@ func (o *CmdServeOptions) Run(configAccess config.ConfigAccess) {
 		log.Fatal(err)
 	}
 
-	s, err := server.New(serverConfig)
+	s, err := carousel.NewServer(serverConfig)
 	if err != nil {
 		log.Fatal(err)
 	}

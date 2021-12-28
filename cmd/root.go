@@ -9,8 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"github.com/walkergriggs/carousel/carousel"
 	"github.com/walkergriggs/carousel/cmd/config"
-	"github.com/walkergriggs/carousel/pkg/server"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -70,8 +70,8 @@ func initConfig() {
 	}
 }
 
-func UnmarshalConfig() (*server.Server, error) {
-	var s server.Server
+func UnmarshalConfig() (*carousel.Server, error) {
+	var s carousel.Server
 
 	err := viper.Unmarshal(&s)
 	if err != nil {

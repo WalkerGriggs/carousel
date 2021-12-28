@@ -1,20 +1,24 @@
-package network
+package carousel
 
 import (
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/sorcix/irc.v2"
-
-	"github.com/walkergriggs/carousel/pkg/channel"
-	"github.com/walkergriggs/carousel/pkg/identity"
 )
+
+type NetworkConfig struct {
+	Name  string
+	URI   string
+	Ident *Identity
+}
 
 // Network represents an IRC network. Each network has a URI, and, because Users
 // own the Network object, each Network stores the User's Identity as well.
 type Network struct {
-	Config   *Config
-	Name     string             `json:"name"`
-	URI      string             `json:"uri"`
-	Ident    *identity.Identity `json:"ident,omitempty"`
-	Channels []*channel.Channel `json:",omitempty"`
+	Config   *NetworkConfig
+	Name     string     `json:"name"`
+	URI      string     `json:"uri"`
+	Ident    *Identity  `json:"ident,omitempty"`
+	Channels []*Channel `json:",omitempty"`
 
 	Buffer        chan *irc.Message `json:"-,omitempty"`
 	Connection    *irc.Conn         `json:"-,omitempty"`
@@ -24,7 +28,7 @@ type Network struct {
 // New takes in a Network Config and returns a new Network object. In this case,
 // all configs are manadatory, but, in its current state, New doesn't throw any
 // errors.
-func New(config *Config) (*Network, error) {
+func NewNetwork(config *NetworkConfig) (*Network, error) {
 	return &Network{
 		Config: config,
 		Name:   config.Name,
@@ -58,7 +62,7 @@ func (n *Network) Listen() error {
 			return err
 		}
 
-		send, err := NetworkCommandTable.MaybeRun(n, msg)
+		send, err := n.MaybeRun(msg)
 		if err != nil {
 			n.LogEntry().WithError(err).Error(err)
 			return err
@@ -138,11 +142,36 @@ func (n *Network) isJoined(name string) bool {
 
 // getChannel searches the networks channels and retrieves the channel matching
 // the given channel name.
-func (n *Network) getChannel(name string) *channel.Channel {
+func (n *Network) getChannel(name string) *Channel {
 	for _, channel := range n.Channels {
 		if channel.Name == name {
 			return channel
 		}
 	}
 	return nil
+}
+
+func (n *Network) Send(msg *irc.Message) error {
+	return n.Connection.Encode(msg)
+}
+
+func (n *Network) Receive() (*irc.Message, error) {
+	return n.Connection.Decode()
+}
+
+func (n *Network) BatchSend(messages []*irc.Message) error {
+	for _, msg := range messages {
+		if err := n.Send(msg); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (n *Network) LogEntry() *log.Entry {
+	return log.WithFields(log.Fields{
+		"Network": n.Name,
+		"Host":    n.URI,
+		"User":    n.Ident.Username,
+	})
 }

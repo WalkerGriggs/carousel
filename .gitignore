@@ -3,7 +3,7 @@
 ### Go
 
 # Binaries
-carousel
+crsl
 *.exe
 *.exe~
 *.dll

@@ -1,42 +1,38 @@
-package client
+package carousel
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"gopkg.in/sorcix/irc.v2"
 )
 
-// CommandHook represents a function which should be run in response to an IRC
-// message. A CommandHook returns a boolean, and an error. The boolean is true
-// if the message should be intercepted or passed along.
-type CommandHook func(n *Client, msg *irc.Message) (bool, error)
+var (
+	ErrDisconnected = errors.New("Client disconnected.")
 
-// CommandTable maps the command string to a CommandHook.
-type CommandTable map[string]CommandHook
+	ClientCommandTable = map[string]ClientCommandHook{
+		irc.USER: (*Client).user,
+		irc.NICK: (*Client).nick,
+		irc.PASS: (*Client).pass,
+		irc.QUIT: (*Client).quit,
+		irc.CAP:  (*Client).cap,
+	}
+)
 
-// MaybeRun wrap a given CommandTable and runs the given message's corresponding
-// hook. If the message command isn't a key in the CommandTable, it does nothing
-// and returns true.
-func (t CommandTable) MaybeRun(n *Client, msg *irc.Message) (bool, error) {
-	hook := t[msg.Command]
-	if hook == nil {
+type ClientCommandHook func(c *Client, msg *irc.Message) (bool, error)
+
+func (c *Client) MaybeRun(msg *irc.Message) (bool, error) {
+	hook, ok := ClientCommandTable[msg.Command]
+	if !ok {
 		return true, nil
 	}
-
-	return hook(n, msg)
+	return hook(c, msg)
 }
 
 // CommandTable maps IRC to commands to hooks. Whenever the client receives a
 // message, it looks up the command in the CommandTable and runs the corresponding
 // function.
-var ClientCommandTable = CommandTable{
-	irc.USER: (*Client).user,
-	irc.NICK: (*Client).nick,
-	irc.PASS: (*Client).pass,
-	irc.QUIT: (*Client).quit,
-	irc.CAP:  (*Client).cap,
-}
 
 // user pulls identity parameters out of the message and stores them in the
 // client. This ident is used to authenticate the client as a user, and should

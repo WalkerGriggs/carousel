@@ -1,15 +1,6 @@
 package config
 
-import (
-	// "encoding/json"
-	// "io/ioutil"
-
-	// "github.com/walkergriggs/carousel/pkg/channel"
-	"github.com/walkergriggs/carousel/pkg/identity"
-	"github.com/walkergriggs/carousel/pkg/network"
-	"github.com/walkergriggs/carousel/pkg/server"
-	"github.com/walkergriggs/carousel/pkg/user"
-)
+import "github.com/walkergriggs/carousel/carousel"
 
 type Config struct {
 	Server *ServerConfig
@@ -59,15 +50,15 @@ func EmptyConfig() *Config {
 	}
 }
 
-func ConvertServerConfig(raw *Config) (*server.Config, error) {
-	users := make([]*user.User, len(raw.Users))
+func ConvertServerConfig(raw *Config) (*carousel.ServerConfig, error) {
+	users := make([]*carousel.User, len(raw.Users))
 	for i, rawUser := range raw.Users {
 		userConfig, err := ConvertUserConfig(rawUser)
 		if err != nil {
 			return nil, err
 		}
 
-		user, err := user.New(userConfig)
+		user, err := carousel.NewUser(userConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +66,7 @@ func ConvertServerConfig(raw *Config) (*server.Config, error) {
 		users[i] = user
 	}
 
-	return &server.Config{
+	return &carousel.ServerConfig{
 		Users:           users,
 		SSLEnabled:      raw.Server.SSL,
 		URI:             raw.Server.URI,
@@ -83,8 +74,8 @@ func ConvertServerConfig(raw *Config) (*server.Config, error) {
 	}, nil
 }
 
-func ConvertUserConfig(raw *UserConfig) (*user.Config, error) {
-	networks := make([]*network.Network, len(raw.Networks))
+func ConvertUserConfig(raw *UserConfig) (*carousel.UserConfig, error) {
+	networks := make([]*carousel.Network, len(raw.Networks))
 
 	for i, rawNetwork := range raw.Networks {
 		config, err := ConvertNetworkConfig(rawNetwork)
@@ -92,38 +83,30 @@ func ConvertUserConfig(raw *UserConfig) (*user.Config, error) {
 			return nil, err
 		}
 
-		networks[i], err = network.New(config)
+		networks[i], err = carousel.NewNetwork(config)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return &user.Config{
+	return &carousel.UserConfig{
 		Username: raw.Username,
 		Password: raw.Password,
 		Networks: networks,
 	}, nil
 }
 
-func ConvertNetworkConfig(raw *NetworkConfig) (*network.Config, error) {
-	ident := identity.Identity{
+func ConvertNetworkConfig(raw *NetworkConfig) (*carousel.NetworkConfig, error) {
+	ident := carousel.Identity{
 		Username: raw.Ident.Username,
 		Nickname: raw.Ident.Nickname,
 		Realname: raw.Ident.Realname,
 		Password: raw.Ident.Password,
 	}
 
-	// channels := make([]*channel.Channel, len(raw.Channels))
-	// for i, name := range raw.Channels {
-	//	channels[i] = &channel.Channel{
-	//		Name: name,
-	//	}
-	// }
-
-	return &network.Config{
-		Name: raw.Name,
-		URI:  raw.URI,
-		// Channels: channels,
+	return &carousel.NetworkConfig{
+		Name:  raw.Name,
+		URI:   raw.URI,
 		Ident: &ident,
 	}, nil
 }

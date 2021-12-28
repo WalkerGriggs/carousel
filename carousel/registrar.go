@@ -1,16 +1,13 @@
-package server
+package carousel
 
 import (
 	"fmt"
 	"time"
 
 	"gopkg.in/sorcix/irc.v2"
-
-	"github.com/walkergriggs/carousel/pkg/client"
-	"github.com/walkergriggs/carousel/pkg/user"
 )
 
-func (s Server) blockingAuthorizeClient(c *client.Client) (*user.User, error) {
+func (s Server) blockingAuthorizeClient(c *Client) (*User, error) {
 	if err := c.Ident.Wait(30 * time.Second); err != nil {
 		return nil, err
 	}
@@ -22,7 +19,7 @@ func (s Server) blockingAuthorizeClient(c *client.Client) (*user.User, error) {
 // the connected client to authenticate some user. authorizeClient will return
 // an error if provided user does not exist or if the password provided does not
 // match the file on record. It returns the user if the credentials are correct.
-func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
+func (s Server) authorizeClient(c *Client) (*User, error) {
 	u, err := s.GetUser(c.Ident.ParsedUsername())
 	if err != nil {
 		return u, err
@@ -45,7 +42,7 @@ func (s Server) authorizeClient(c *client.Client) (*user.User, error) {
 // getUser searches the server's users and retrieves the user matching the given
 // username. It returns an error if the user does not exist. This function is
 // only a helper until a better User storage solution is implemented.
-func (s Server) GetUser(username string) (*user.User, error) {
+func (s Server) GetUser(username string) (*User, error) {
 	for _, user := range s.users {
 		if username == user.Username {
 			return user, nil
