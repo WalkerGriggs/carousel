@@ -47,6 +47,7 @@ func (o *CmdNetworkOptions) Validate(cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("First argument must be the network name")
 	}
+	return nil
 }
 
 func (o *CmdNetworkOptions) Complete(cmd *cobra.Command, args []string) {

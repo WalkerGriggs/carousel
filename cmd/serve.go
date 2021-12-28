@@ -55,5 +55,9 @@ func (o *CmdServeOptions) Run(configAccess config.ConfigAccess) {
 		log.Fatal(err)
 	}
 
+	carousel.NewHTTPServer(s, &carousel.HTTPConfig{
+		Advertise: "127.0.0.1:8080",
+	})
+
 	s.Serve()
 }
