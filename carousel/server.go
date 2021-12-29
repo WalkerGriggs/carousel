@@ -11,7 +11,6 @@ import (
 
 type ServerConfig struct {
 	URI             string
-	Users           []*User
 	SSLEnabled      bool
 	CertificatePath string
 }
@@ -26,7 +25,7 @@ type Server struct {
 func NewServer(config *ServerConfig) (*Server, error) {
 	return &Server{
 		config: config,
-		users:  config.Users,
+		users:  make([]*User, 0),
 	}, nil
 }
 
@@ -34,7 +33,7 @@ func NewServer(config *ServerConfig) (*Server, error) {
 // event loop. Serve blocks for the lifetime of the parent process and should
 // only return if the TCP listener closes or errors (even if there are no active
 // connections).
-func (s Server) Serve() {
+func (s *Server) Serve() {
 	log.Info("Listening at ", s.config.URI)
 
 	l, err := s.listener()
@@ -57,7 +56,7 @@ func (s Server) Serve() {
 // acceptConnection establishes a new connection with the accepted TCP client,
 // and spawns the concurrent processess responsible to message passing between
 // the network and user.
-func (s Server) acceptConnection(conn net.Conn) {
+func (s *Server) acceptConnection(conn net.Conn) {
 	clientGroup := rungroup.New(context.Background())
 
 	c, _ := NewClient(ClientConfig{conn})

@@ -68,6 +68,8 @@ func NewHTTPServer(s *Server, c *HTTPConfig) (*HTTPServer, error) {
 // multiplexer.
 func (s *HTTPServer) registerHandlers() {
 	s.mux.HandleFunc("/v1/ping", s.wrap(s.pongRequest))
+	s.mux.HandleFunc("/v1/users", s.wrap(s.usersRequest))
+	s.mux.HandleFunc("/v1/networks", s.wrap(s.networksRequest))
 }
 
 // wrap wraps the handler function with some quality-of-life improvements. It
